@@ -1,48 +1,36 @@
 import React from 'react'
-import HighlightText from './HighlightText'
-import know_your_progress from "../../../assets/Images/Know_your_progress.png"
-import compare_with_others from "../../../assets/Images/Compare_with_others.png"
-import plan_your_lesson from "../../../assets/Images/Plan_your_lessons.png"
-import CTAButton from "../HomePage/Button"
-
+import HighlightText from "./HighlightText"
+import CTAButton from "./Button"
+import Know_your_progress from "../../../assets/Images/Know_your_progress.svg"
+import Compare_with_others from"../../../assets/Images/Compare_with_others.svg"
+import Plan_your_lessons from "../../../assets/Images/Plan_your_lessons.svg"
 const LearningLanguageSection = () => {
   return (
-    <div className='mt-[120px]'>
-      <div className='flex flex-col gap-5 items-center mb-28'>
+    <div className='lg:mt-[80px] mt-[120px] mb-20'>
+      <div className="flex flex-col gap-25 mt-5 max-w-maxContent items-center  justify-around ">
 
-          <div className='text-4xl font-semibold text-center'>
-            Your Swiss knife for
-            <HighlightText text={" learning any language"}></HighlightText>
+          <div className='text-4xl font-semibold py-3 '>
+          Your swiss knife for
+            <HighlightText text={" learning any language"} />
           </div>
 
-          <div className='text-center text-richblack-700 mx-auto text-base mt-3 font-medium leading-6 lg:w-[75%]'>
-            Using spin making learning multiple languages easy, with 20+ languages realistic voice-over,
-            progress tracking, custom schedule and more.
-          </div>
+          <p className='lg:text-center lg:w-[60%] text-richblack-600 mx-auto font-semibold'>Using spin making learning multiple languages easy with 20+ languages realistic voice-over, progress tracking, custom schedule and more.</p>
 
-          <div className='flex flex-col lg:flex-row items-center justify-center mt-8 ml-5 lg:mt-0'>
-              <img src={know_your_progress}
-                   alt='KnowYourProgress'
-                   className='object-contain lg:-mr-32'>
-              </img>
-              <img src={compare_with_others}
-                   alt='CompareWithOthers'
-                   className='object-contain lg:-mb-10 lg:-mt-0 -mt-12'>
-              </img>
-              <img src={plan_your_lesson}
-                   alt='PlanYourLesson'
-                   className='object-contain lg:-ml-36 lg:-mt-5 -mt-16'>
-              </img>
-          </div>
+          <div className='flex lg:flex-row flex-col items-center justify-center mt-5 relative'>
+                <img src={Know_your_progress} alt="Know Your Progress" 
+                className=' lg:absolute object-contain lg:translate-x-[-55%] z-1 hover:scale-110 transition-all duration-400 hover:-rotate-6' />
 
-          <div className='w-fit mx-auto lg:mb-10 mb-8 mt-8'>
-            <CTAButton active={true} linkto={"/signup"}>
-                <div>
-                  Learn More
-                </div>
-            </CTAButton>
-          </div>
+                <img src={Compare_with_others} alt="Compare with others"
+                className='object-contain lg:translate-x-[100px] z-1 hover:scale-110 transition-all duration-400 hover:rotate-2' />
 
+                <img src={Plan_your_lessons} alt="Plan your lessons"
+                className='lg:absolute object-contain lg:translate-x-[90%] z-1 hover:scale-110 transition-all duration-300 hover:-rotate-3' />
+
+          </div>
+          <div className="py-9">
+          <CTAButton active={true} linkto={"/signup"}>Learn More</CTAButton>
+          </div>
+          
       </div>
     </div>
   )
