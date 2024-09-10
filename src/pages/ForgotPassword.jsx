@@ -1,78 +1,74 @@
-import React from 'react'
-import { BiArrowBack } from "react-icons/bi"
-import { useSelector } from "react-redux"
-import { useState } from 'react';
+import React, { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { getPasswordResetToken } from '../services/operations/authAPI'
-
+import {AiOutlineArrowLeft} from "react-icons/ai"
+import { getPasswordResetToken } from '../services/authAPI';
 const ForgotPassword = () => {
-
-    const [emailSent, setEmailSent] = useState(false);
-    const [email, setEmail] = useState("");
-    const {loading} = useSelector((state) => state.auth);
+    const {loading} =useSelector((state)=>state.auth);
+    const [emailSent,setEmailSent] = useState(false);
+    const [email,setEmail] = useState("");
     const dispatch = useDispatch();
 
-    const handleOnSubmit = (e) => {
+    const handleOnSubmit=(e)=>{
         e.preventDefault();
-        dispatch(getPasswordResetToken(email, setEmailSent));
+        dispatch(getPasswordResetToken(email,setEmailSent));
     }
-
   return (
-    <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
-      {
-        loading ? (
-            <div className='spinner'></div>
-        ) : (
-            <div className="max-w-[500px] p-4 lg:p-8">
-                <h1 className="text-[1.875rem] font-semibold leading-[2.375rem] text-richblack-5">
-                    {
-                        !emailSent ? "Reset your password" : "Check your email"
-                    }
-                </h1>
-
-                <p className="my-4 text-[1.125rem] leading-[1.625rem] text-richblack-100">
-                    {
-                        
-                        !emailSent ? "Have no fear. We'll email you instructions to reset your password. If you dont have access to your email we can try account recovery" 
-                        : `We have sent the reset email to ${email}`
-                    }
-                </p>
-
-                <form onSubmit={handleOnSubmit}>
-                    {
-                        !emailSent && (
-                            <label className='w-full'>
-                                <p className="mb-1 text-[0.875rem] leading-[1.375rem] text-richblack-5">Email Address <sup className='text-pink-200'>*</sup></p>
-                                <input
-                                required
-                                type='email'
-                                name='email'
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder='Enter your email address'
-                                className='form-style w-full'
-                                ></input>
-                            </label>
-                        )
-                    }
-
-                    <button type='submit' className="mt-6 w-full rounded-[8px] bg-yellow-50 py-[12px] px-[12px] font-medium text-richblack-900">
-                        {
-                            !emailSent ? "Reset Password" : "Resend Email"
-                        }
-                    </button>
-                </form>
-
-                <div className="mt-6 flex items-center justify-between">
-                    <Link to="/login">
-                        <p className="flex items-center gap-x-2 text-richblack-5"><BiArrowBack></BiArrowBack> Back to Login</p>
-                    </Link>
+    <div className='w-11/12 max-w-maxContent text-white  flex flex-col justify-center items-center m-auto'>
+        {
+            loading ? (
+                <div className='flex justify-center items-center '> Loading.... </div>
+            ):
+            (
+                <div className=' flex flex-col justify-center items-center lg:items-start lg:w-[500px]'>
+                        <h1 className='text-3xl'>
+                            {
+                                !emailSent ? "Reset your password" 
+                                : "Check your email"
+                            }
+                        </h1>
+                        <p className='w-[80%] pt-3 text-richblack-100 text-lg'>
+                            {
+                                !emailSent ? "Have no fear. We’ll email you instructions to reset your password. If you dont have access to your email we can try account recovery"
+                                :`We have sent the reset email to
+                                ${email}`
+                            }
+                        </p>
+                        <form onSubmit={handleOnSubmit}
+                        className='w-[80%] py-9'>
+                            {
+                                !emailSent && (
+                                    <label className='flex flex-col gap-2'>
+                                        <p className='text-richblack-5 text-sm'>Email Address <span className="text-pink-200">*</span></p>
+                                        <input
+                                            required
+                                            type='email'
+                                            name='email'
+                                            value={email}
+                                            onChange={(e)=>setEmail(e.target.value)}
+                                            placeholder='Enter your Email Address'
+                                            className="bg-richblack-800 py-2 rounded-md text-white border-b-richblack-700 px-5 "
+                                            />
+                                    </label>
+                                )
+                            }
+                            <button
+                            type='submit'
+                            className='mt-9 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'>
+                                {
+                                !emailSent ? "Reset Password" : "Resend Email"
+                                }
+                            </button>
+                        </form>
+                        <div className=''>
+                            <Link to="/login" className='flex items-center justify-center gap-2 text-richblack-100 hover:text-richblack-25'>
+                                <AiOutlineArrowLeft/>
+                                <p>Back to Login</p>
+                            </Link>
+                        </div>
                 </div>
-
-            </div>
-        )
-      }
+            )
+        }
     </div>
   )
 }

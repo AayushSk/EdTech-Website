@@ -1,15 +1,15 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-const Button = ({children, active, linkto}) => {
+const Button= ({children,active,linkto}) => {
   return (
-    <Link to={linkto}>
-        <div className={`text-center text-[13px] px-6 py-3 rounded-md font-bold
-        ${active ? "bg-yellow-50 text-black":"bg-richblack-800"}
-        hover:scale-95 transition-all duration-200`}>
-            {children}
-        </div>
-    </Link>
+   <Link to={linkto}>
+    <div className={`text-center text-[18px] px-6 py-3 rounded-md font-bold flex
+    ${active ? "bg-yellow-50 text-black shadow-sm shadow-yellow-200" : "bg-richblack-800 shadow-sm shadow-richblack-600"}
+    hover:scale-95 transition-all duration-200`}>
+        {children}
+    </div>
+   </Link>
   )
 }
 
