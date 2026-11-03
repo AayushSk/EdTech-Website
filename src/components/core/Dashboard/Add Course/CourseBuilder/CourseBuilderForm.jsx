@@ -11,61 +11,59 @@ import { createSection, updateSection } from '../../../../../services/courseDeta
 // import Section from '../../../../../../server/models/Section';
 const CourseBuilderForm = () => {
 
-  const {register,handleSubmit,setValue,formState:{errors}} = useForm();
-  const [editSectionName,setEditSectionName] = useState(null);
-  const {course}= useSelector((state)=>state.course)
-  const dispatch=useDispatch();
-  const [loading,setLoading]=useState(false);
-  const {token} = useSelector((state)=>state.auth)
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+  const [editSectionName, setEditSectionName] = useState(null);
+  const { course } = useSelector((state) => state.course)
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
+  const { token } = useSelector((state) => state.auth)
 
-  const cancelEdit=()=>{
+  const cancelEdit = () => {
     setEditSectionName(null);
-    setValue("sectionName","");
+    setValue("sectionName", "");
   }
 
-  const goBack=()=>{
-      dispatch(setStep(1));
-      dispatch(setEditCourse(true));
+  const goBack = () => {
+    dispatch(setStep(1));
+    dispatch(setEditCourse(true));
   }
 
-  const goToNext =()=>{
-      if(course.courseContent.length===0)
-      {
-        toast.error("Please add atleast one section");
-        return ;
-      }
-      if(course.courseContent.some((section)=> section.subSection.length ===0))
-      {
-        toast.error("Please add atleast one lecture in each section");
-        return ;
-      }
-      // if everything is good,
-      dispatch(setStep(3));
+  const goToNext = () => {
+    if (course.courseContent.length === 0) {
+      toast.error("Please add atleast one section");
+      return;
+    }
+    if (course.courseContent.some((section) => section.subSection.length === 0)) {
+      toast.error("Please add atleast one lecture in each section");
+      return;
+    }
+    // if everything is good,
+    dispatch(setStep(3));
   }
 
-  const onSubmit =async(data)=>{
+  const onSubmit = async (data) => {
     setLoading(true);
     let result;
 
-    if(editSectionName){
+    if (editSectionName) {
       result = await updateSection({
         sectionName: data.sectionName,
         sectionId: editSectionName,
         courseId: course._id,
-      },token)
+      }, token)
     }
-    else{
+    else {
       result = await createSection({
         sectionName: data.sectionName,
         courseId: course._id,
-      },token)
+      }, token)
     }
 
     // update values of course
-    if(result){
+    if (result) {
       dispatch(setCourse(result));
       setEditSectionName(null);
-      setValue("sectionName","")
+      setValue("sectionName", "")
     }
 
     // set loading false
@@ -74,13 +72,13 @@ const CourseBuilderForm = () => {
   }
 
 
-  const handleChangeEditSectionName = (sectionId,sectionName)=>{
-    if(editSectionName === sectionId){
+  const handleChangeEditSectionName = (sectionId, sectionName) => {
+    if (editSectionName === sectionId) {
       cancelEdit();
       return;
     }
     setEditSectionName(sectionId);
-    setValue("sectionName",sectionName);
+    setValue("sectionName", sectionName);
 
   }
 
@@ -94,31 +92,32 @@ const CourseBuilderForm = () => {
             id="sectionName"
             name='sectionName'
             placeholder="Add Section Name"
-            {...register("sectionName",{required:true})}
+            {...register("sectionName", { required: true })}
             className='w-full'
           />
-          {errors.sectionName &&(
+          {errors.sectionName && (
             <span>
               Section Name is required
             </span>
           )}
-        </div> 
+        </div>
         <div className='mt-10 flex'>
           <IconBtn
-          type="Submit"
-          text={editSectionName ? "Edit Section Name":"Create Section"}
-          outline={true}
-          customClasses={"text-white"}>
-              <CiCirclePlus className='text-yellow-100 text-2xl font-bold' />
+            type="Submit"
+            disabled={loading}
+            text={editSectionName ? "Edit Section Name" : "Create Section"}
+            outline={true}
+            customClasses={"text-white"}>
+            <CiCirclePlus className='text-yellow-100 text-2xl font-bold' />
           </IconBtn>
           {
-            editSectionName &&(
+            editSectionName && (
               <button
-              type='button'
-              onClick={cancelEdit}
-              className="text-sm text-richblack-300 underline"
+                type='button'
+                onClick={cancelEdit}
+                className="text-sm text-richblack-300 underline"
               >
-              Cancel Edit
+                Cancel Edit
               </button>
             )
           }
@@ -126,22 +125,22 @@ const CourseBuilderForm = () => {
       </form>
 
       {
-        course.courseContent.length>0 && (
-          <NestedView handleChangeEditSectionName={handleChangeEditSectionName}/>
+        course.courseContent.length > 0 && (
+          <NestedView handleChangeEditSectionName={handleChangeEditSectionName} />
 
         )
       }
 
       <div className='flex gap-x-3 justify-end mt-10'>
         <button
-        onClick={goBack}
-        className='rounded-md cursor-pointer flex items-center'
+          onClick={goBack}
+          className='rounded-md cursor-pointer flex items-center'
         >Back</button>
 
-        <IconBtn 
-        text="Next"
-        onClick={goToNext}>
-              <MdNavigateNext />
+        <IconBtn
+          text="Next"
+          onClick={goToNext}>
+          <MdNavigateNext />
         </IconBtn>
       </div>
 

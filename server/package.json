@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "postinstall": "node -e \"const fs=require('fs'),p='./node_modules/buffer-equal-constant-time/index.js';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace(/var SlowBuffer = require\\('buffer'\\)\\.SlowBuffer;/g,'var SlowBuffer = require(\\'buffer\\').SlowBuffer || Buffer;');c=c.replace(/var origSlowBufEqual = SlowBuffer\\.prototype\\.equal;/g,'var origSlowBufEqual = SlowBuffer && SlowBuffer.prototype ? SlowBuffer.prototype.equal : undefined;');fs.writeFileSync(p,c);}\""
   },
   "keywords": [],
   "author": "",

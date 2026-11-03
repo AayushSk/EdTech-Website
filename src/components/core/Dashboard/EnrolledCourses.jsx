@@ -11,18 +11,20 @@ export default function EnrolledCourses() {
   const navigate = useNavigate()
 
   const [enrolledCourses, setEnrolledCourses] = useState(null)
-  const getEnrolledCourses = async () => {
-    try {
-      const res = await getUserEnrolledCourses(token);
 
-      setEnrolledCourses(res);
-    } catch (error) {
-      console.log("Could not fetch enrolled courses.")
-    }
-  };
   useEffect(() => {
-    getEnrolledCourses();
-  }, [])
+    const getEnrolledCourses = async () => {
+      try {
+        const res = await getUserEnrolledCourses(token)
+        setEnrolledCourses(res)
+      } catch (error) {
+        console.log("Could not fetch enrolled courses.")
+      }
+    }
+    if (token) {
+      getEnrolledCourses()
+    }
+  }, [token])
 
   return (
     <>
@@ -47,9 +49,8 @@ export default function EnrolledCourses() {
           {/* Course Names */}
           {enrolledCourses.map((course, i, arr) => (
             <div
-              className={`flex items-center border border-richblack-700 ${
-                i === arr.length - 1 ? "rounded-b-lg" : "rounded-none"
-              }`}
+              className={`flex items-center border border-richblack-700 ${i === arr.length - 1 ? "rounded-b-lg" : "rounded-none"
+                }`}
               key={i}
             >
               <div
