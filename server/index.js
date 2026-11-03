@@ -22,6 +22,11 @@ const cors = require("cors");
 const { cloudnairyconnect } = require("./config/cloudinary");
 const fileUpload = require("express-fileupload");
 
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
 const PORT = process.env.PORT || 4000;
 
 //database configuration 
@@ -34,10 +39,14 @@ app.use(cookieParser());
 //frontend linking
 app.use(
     cors({
-        origin: 'http://localhost:3000',
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
-        // optionSuccessStatus:200,
-
     })
 );
 
@@ -65,6 +74,10 @@ app.get("/", (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`app running at ${PORT}`);
-});
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`app running at ${PORT}`);
+    });
+}
+
+module.exports = app;
