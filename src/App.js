@@ -19,6 +19,7 @@ import { ACCOUNT_TYPE } from './utils/constants'
 import { useSelector } from 'react-redux'
 import AddCourse from './components/core/Dashboard/Add Course'
 import Contact from './pages/Contact'
+import { Analytics } from '@vercel/analytics/react'
 
 function App() {
   const { user } = useSelector((state) => state.profile)
@@ -65,6 +66,7 @@ function App() {
 
 
       </Routes>
+      <Analytics />
     </div>
   )
 }
