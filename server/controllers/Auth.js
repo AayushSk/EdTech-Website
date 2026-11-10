@@ -6,7 +6,7 @@ const otpGenerator = require("otp-generator");
 const mailSender = require("../utils/mailSender");
 const { passwordUpdated } = require("../mail/templates/passwordUpdate");
 const Profile = require("../models/Profile");
-require("dotenv").config();
+const env = require("../config/env");
 
 // Signup Controller for Registering USers
 
@@ -147,7 +147,7 @@ exports.login = async (req, res) => {
 		if (await bcrypt.compare(password, user.password)) {
 			const token = jwt.sign(
 				{ email: user.email, id: user._id, accountType: user.accountType },
-				process.env.JWT_SECRET,
+				env.JWT_SECRET,
 				{
 					expiresIn: "24h",
 				}

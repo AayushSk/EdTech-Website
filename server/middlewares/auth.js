@@ -1,9 +1,9 @@
 // Importing required modules
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
+const env = require("../config/env");
 const User = require("../models/User");
 // Configuring dotenv to load environment variables from .env file
-dotenv.config();
+// dotenv loaded via config/env
 
 // This function is used as middleware to authenticate user requests
 exports.auth = async (req, res, next) => {
@@ -26,7 +26,7 @@ exports.auth = async (req, res, next) => {
         console.log("token found")
 		try {
 			// Verifying the JWT using the secret key stored in environment variables
-			const decode = await jwt.verify(token, process.env.JWT_SECRET);
+			const decode = await jwt.verify(token, env.JWT_SECRET);
 			console.log(decode);
 			// Storing the decoded JWT payload in the request object for further use
 			req.user = decode;

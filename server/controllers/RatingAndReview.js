@@ -1,6 +1,6 @@
 const RatingAndReview= require("../models/RatingAndReview");
 const Course= require("../models/Course");
-require("dotenv").config();
+
 //create Rating
 exports.createRating = async (req, res) => {
     try{

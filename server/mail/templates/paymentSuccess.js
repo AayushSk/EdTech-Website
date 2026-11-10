@@ -1,3 +1,5 @@
+const env = require("../../config/env");
+
 exports.paymentSuccess = (amount, paymentId, orderId, name,lastname) => {
     return `<!DOCTYPE html>
     <html>
@@ -83,7 +85,7 @@ exports.paymentSuccess = (amount, paymentId, orderId, name,lastname) => {
                 </p>
             </div>
             <div class="support">If you have any questions or need assistance, please feel free to reach out to us at <a
-                    href="mailto:info@studynotion.com">info@studynotion.com</a>. We are here to help!</div>
+                    href="mailto:${env.SUPPORT_EMAIL}">${env.SUPPORT_EMAIL}</a>. We are here to help!</div>
         </div>
     </body>
     

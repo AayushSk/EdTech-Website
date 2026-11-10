@@ -1,6 +1,6 @@
 const Category = require("../models/Category");
 const Course = require("../models/Course");
-require("dotenv").config();
+
 exports.createCategory = async (req, res) => {
 	try {
 		const { name, description } = req.body;

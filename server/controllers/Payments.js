@@ -7,7 +7,7 @@ const {paymentSuccess} = require("../mail/templates/paymentSuccess");
 const { default: mongoose } = require("mongoose");
 const crypto = require("crypto");
 const CourseProgress = require("../models/CourseProgress");
-require("dotenv").config();
+const env = require("../config/env");
 
 exports.capturePayment = async (req, res) => {
     //get courseId and UserID
@@ -176,7 +176,7 @@ exports.verifySignature = async (req, res) => {
 
         try{
             //verify the signature
-            const generatedSignature = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET).update(body.toString()).digest("hex");
+            const generatedSignature = crypto.createHmac("sha256", env.RAZORPAY.SECRET).update(body.toString()).digest("hex");
             if(generatedSignature === razorpay_signature) {
                 await enrolleStudent(courses, userId);
             }

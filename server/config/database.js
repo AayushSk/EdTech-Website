@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
+const env = require("./env");
 
 exports.connect = () => {
-    if (!process.env.DATABASE_URL) {
+    if (!env.DATABASE_URL) {
         console.warn("DATABASE_URL is not set in environment variables. Please check your .env file.");
         return;
     }
-    mongoose.connect(process.env.DATABASE_URL)
+    mongoose.connect(env.DATABASE_URL)
         .then(() => console.log("DB Connected Successfully"))
         .catch((error) => {
             console.log("DB Connection Failed");

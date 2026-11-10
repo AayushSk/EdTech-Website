@@ -1,5 +1,6 @@
 const mailSender = require("../utils/mailSender");
-require("dotenv").config();
+const env = require("../config/env");
+
 exports.contactUs = async (req, res) => {
     const { firstName, lastName, email, message, phoneNo } = req.body;
     if (!firstName || !email || !message) {
@@ -9,34 +10,35 @@ exports.contactUs = async (req, res) => {
         });
     }
     try {
-        const data={
+        const data = {
             firstName,
             lastName: `${lastName ? lastName : "null"}`,
             email,
             message,
             phoneNo: `${phoneNo ? phoneNo : "null"}`,
-        }
-        const info = await mailSender("aayushyadav16112002@gmail.com","Enquery",`<html><body>${
-            Object.keys(data).map((key) => {
-                return `<p>${key} : ${data[key]}</p>`;
-            })
-        }</body></html>`);
-        if(info){
+        };
+        const info = await mailSender(
+            env.CONTACT_EMAIL,
+            "Enquiry Received",
+            `<html><body>${Object.keys(data)
+                .map((key) => `<p>${key} : ${data[key]}</p>`)
+                .join("")}</body></html>`
+        );
+        if (info) {
             return res.status(200).send({
                 success: true,
                 message: "Your message has been sent successfully",
             });
-        }
-        else{
-            return res.status(403).send({
+        } else {
+            return res.status(500).send({
                 success: false,
-                message: "Something went wrong",
+                message: "Failed to send message",
             });
         }
     } catch (error) {
-        return res.status(403).send({
+        return res.status(500).send({
             success: false,
-            message: "Something went wrong",
+            message: error.message,
         });
     }
 };

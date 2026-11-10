@@ -3,7 +3,7 @@ const Section = require("../models/Section");
 const SubSection = require("../models/SubSection");
 const Course = require("../models/Course");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
-require("dotenv").config();
+const env = require("../config/env");
 // Create a new sub-section for a given section
 exports.createSubSection = async (req, res) => {
 	try {
@@ -29,7 +29,7 @@ exports.createSubSection = async (req, res) => {
 		// Upload the video file to Cloudinary
 		const uploadDetails = await uploadImageToCloudinary(
 			video,
-			process.env.FOLDER_NAME
+			env.CLOUDINARY.FOLDER_NAME
 		);
 
 		console.log(uploadDetails);
@@ -77,7 +77,7 @@ exports.updateSubSection = async (req,res) => {
 		if(video){
 		 uploadDetails = await uploadImageToCloudinary(
 			video,
-			process.env.FOLDER_NAME
+			env.CLOUDINARY.FOLDER_NAME
 		);
 		}
 

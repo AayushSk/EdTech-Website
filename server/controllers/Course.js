@@ -6,7 +6,7 @@ const { convertSecondsToDuration}= require("../utils/secToDuration");
 const CourseProgress = require("../models/CourseProgress")
 const Section = require("../models/Section")
 const SubSection = require("../models/SubSection");
-require("dotenv").config();
+const env = require("../config/env");
 
 // Function to create a new course
 exports.createCourse = async (req, res) => {
@@ -78,7 +78,7 @@ exports.createCourse = async (req, res) => {
 		// Upload the Thumbnail to Cloudinary
 		const thumbnailImage = await uploadImageToCloudinary(
 			thumbnail,
-			process.env.FOLDER_NAME
+			env.CLOUDINARY.FOLDER_NAME
 		);
 		console.log("upload done");
 
@@ -257,7 +257,7 @@ exports.editCourse = async (req, res) => {
 		const thumbnail = req.files.thumbnailImage
 		const thumbnailImage = await uploadImageToCloudinary(
 		  thumbnail,
-		  process.env.FOLDER_NAME
+		  env.CLOUDINARY.FOLDER_NAME
 		)
 		course.thumbnail = thumbnailImage.secure_url
 	  }

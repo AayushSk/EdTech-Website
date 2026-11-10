@@ -2,7 +2,7 @@ const Profile = require("../models/Profile");
 const User = require("../models/User");
 const Course = require("../models/Course");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
-require("dotenv").config();
+const env = require("../config/env");
 // Method for updating a profile
 exports.updateProfile = async (req, res) => {
 	try {
@@ -145,7 +145,7 @@ exports.updateDisplayPicture = async (req, res) => {
     }
 	const uploadDetails = await uploadImageToCloudinary(
 		Image,
-		process.env.FOLDER_NAME
+		env.CLOUDINARY.FOLDER_NAME
 	);
 	console.log(uploadDetails);
 

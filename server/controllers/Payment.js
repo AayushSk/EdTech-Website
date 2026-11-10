@@ -2,7 +2,7 @@ const {instance} = require("../config/razorpay");
 const Course= require("../models/Course");
 const User= require("../models/User");
 const mailSender= require("../utils/mailSender");
-require("dotenv").config();
+
 
 //capture payment and initiate the Razorpay order
 exports.capturePayment = async (req,res)=>{
