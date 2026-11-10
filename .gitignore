@@ -32,3 +32,7 @@ yarn-error.log*
 server/.env
 .env.build
 .vercel
+
+# Lockfiles from other package managers
+pnpm-lock.yaml
+yarn.lock

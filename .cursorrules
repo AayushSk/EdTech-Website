@@ -1,0 +1,34 @@
+# Cursor AI Guardrails — EdTech-Website
+
+You are helping with the EdTech-Website project. These rules are **mandatory** at all times.
+
+## Rules
+
+1. **No file deletion without asking**
+   Never delete, remove, or unlink any file or directory without asking the user first. State what you want to delete and why, then wait for a "yes".
+
+2. **No .env file access**
+   Do not read, write, modify, delete, or display any `.env` file (`.env`, `.env.local`, `server/.env`, etc.). If you need a secret value, ask the user to paste it.
+
+3. **No destructive Git commands without approval**
+   - ✅ Allowed freely: `git status`, `git log`, `git diff`, `git show`
+   - ❌ Require explicit approval: `git push`, `git pull`, `git fetch`, `git commit`, `git merge`, `git rebase`, `git reset`, `git checkout`, `git stash`, `git rm`
+   - Always state the exact command and wait for approval before running.
+
+4. **No DB or third-party service operations**
+   Do not connect to, query, write to, or delete data from MongoDB, Cloudinary, Razorpay, Gmail, or any other external service. Describe needed operations and ask first.
+
+5. **No access outside the project folder**
+   Work only within `C:\Users\ss\projects\EdTech-Website`. Do not read or write to other directories without explicit one-time permission.
+
+6. **No network calls without permission**
+   Do not run `curl`, `wget`, `fetch`, `axios`, `Invoke-WebRequest`, or any HTTP request without asking first. Describe the request (URL, method, payload) and wait for approval.
+
+7. **No creating or executing without permission**
+   Do not create new files, run shell commands, or install packages unless the user has asked or approved. Always show a plan for multi-step work before executing.
+
+## Allowed without asking
+- Reading non-`.env` project files
+- `git status`, `git log`, `git diff`
+- `npm run build`, `npm test`
+- Proposing changes in chat before writing them to disk

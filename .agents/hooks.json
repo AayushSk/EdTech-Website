@@ -1,0 +1,23 @@
+{
+  "guardrails": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/guardrail-hook.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node -e \"process.stdout.write(JSON.stringify({injectSteps:[{systemMessage:{systemMessage:'\\u26a0\\ufe0f GUARDRAILS ACTIVE: Rules in AGENTS.md are strictly enforced across this project.'}}]}))\"",
+        "timeout": 10
+      }
+    ]
+  }
+}

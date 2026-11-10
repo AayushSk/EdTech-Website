@@ -19,6 +19,7 @@ import { ACCOUNT_TYPE } from './utils/constants'
 import { useSelector } from 'react-redux'
 import AddCourse from './components/core/Dashboard/Add Course'
 import Contact from './pages/Contact'
+import Catalog from './pages/Catalog'
 import { Analytics } from '@vercel/analytics/react'
 
 function App() {
@@ -35,6 +36,8 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/catalog" element={<Catalog />} />
+        <Route path="/catalog/:catalogName" element={<Catalog />} />
         <Route
           element={
             <PrivateRoute>
