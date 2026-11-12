@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useForm } from "react-hook-form"
 import countrycode from "../../../data/countrycode.json"
-
-
 import { toast } from "react-hot-toast"
+import { apiConnector } from "../../../services/apiconnector"
+import { contactusEndpoint } from "../../../services/apis"
 
 const ContsctUs = () => {
 
@@ -20,47 +20,26 @@ const ContsctUs = () => {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitSuccessful },
+        formState: { errors },
     } = useForm();
 
-    useEffect(() => {
-        if (isSubmitSuccessful) {
-            reset(
-                {
-                    email: "",
-                    firstName: "",
-                    lastName: "",
-                    message: "",
-                    phoneNo: "",
-                    countryCode: ""
-                }
-            )
-        }
-    }, [reset, isSubmitSuccessful])
-
     const submitContactForm = async (data) => {
-        console.log("Logging Data", data);
         try {
             setLoading(true);
-            // const response= await apiConnector("POST",contactusEndpoint.CONTACT_US_API,data);
-            var myHeaders = new Headers();
-            myHeaders.append("Content-Type", "application/json");
-            var requestOptions = {
-                method: "post",
-                headers: myHeaders,
-                redirect: "follow",
-                body: JSON.stringify([
-                    [data.firstName, data.lastName, data.email, data.message, data.countryCode, data.phoneNo, new Date().toLocaleString()]
-                ])
+            const response = await apiConnector(
+                "POST",
+                contactusEndpoint.GET_IN_TOUCH_API,
+                data,
+            );
+            if (!response.data?.success) {
+                throw new Error(response.data?.message || "We could not save your message.");
             }
-            const response = await fetch("https://v1.nocodeapi.com/prathmesh_100/google_sheets/QtvEGSOvGovSxrdh?tabId=Sheet1", requestOptions).then(response => response.text())
-            console.log("Logging Response", response);
-            toast.success("Response recorded Successfully")
-            setLoading(false);
+            toast.success(response.data.message || "Your message was saved successfully.");
+            reset();
         }
         catch (error) {
-            console.log("Error", error.message);
-            toast.error("Something went wrong")
+            toast.error(error.response?.data?.message || error.message || "We could not save your message.");
+        } finally {
             setLoading(false);
         }
     }

@@ -1,0 +1,15 @@
+{
+  "name": "edtech-kafka-worker",
+  "version": "1.0.0",
+  "description": "Native Apache Kafka Background Consumer Worker for EdTech Application",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "nodemon worker.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "kafkajs": "^2.2.4",
+    "nodemailer": "^6.9.8"
+  }
+}

@@ -482,53 +482,76 @@ exports.deleteCourse = async (req, res) => {
 
 //mark lecture as completed
 exports.markLectureAsComplete = async (req, res) => {
-	const { courseId, subSectionId, userId } = req.body
-	if (!courseId || !subSectionId || !userId) {
-	  return res.status(400).json({
-		success: false,
-		message: "Missing required fields",
-	  })
-	}
-	try {
-	const progressAlreadyExists = await CourseProgress.findOne({
-				  userID: userId,
-				  courseID: courseId,
-				})
-	  const completedVideos = progressAlreadyExists.completedVideos
-	  if (!completedVideos.includes(subSectionId)) {
-		await CourseProgress.findOneAndUpdate(
-		  {
-			userID: userId,
-			courseID: courseId,
-		  },
-		  {
-			$push: { completedVideos: subSectionId },
-		  }
-		)
-	  }else{
+	const { courseId, subSectionId } = req.body;
+	const userId = req.user.id;
+
+	if (!courseId || !subSectionId) {
 		return res.status(400).json({
 			success: false,
-			message: "Lecture already marked as complete",
-		  })
-	  }
-	  await CourseProgress.findOneAndUpdate(
-		{
-		  userId: userId,
-		  courseID: courseId,
-		},
-		{
-		  completedVideos: completedVideos,
-		}
-	  )
-	return res.status(200).json({
-	  success: true,
-	  message: "Lecture marked as complete",
-	})
-	} catch (error) {
-	  return res.status(500).json({
-		success: false,
-		message: error.message,
-	  })
+			message: "Missing required fields",
+		});
 	}
 
-}
+	try {
+		const course = await Course.findOne({
+			_id: courseId,
+			studentsEnrolled: userId,
+		}).select("courseContent");
+
+		if (!course) {
+			return res.status(403).json({
+				success: false,
+				message: "You are not enrolled in this course",
+			});
+		}
+
+		const section = await Section.exists({
+			_id: { $in: course.courseContent },
+			subSection: subSectionId,
+		});
+
+		if (!section) {
+			return res.status(404).json({
+				success: false,
+				message: "Lecture not found in this course",
+			});
+		}
+
+		const progress = await CourseProgress.findOne({
+			userID: userId,
+			courseID: courseId,
+		});
+
+		if (!progress) {
+			return res.status(404).json({
+				success: false,
+				message: "Course progress was not initialized",
+			});
+		}
+
+		if (progress.completedVideos.some((completedId) => completedId.equals(subSectionId))) {
+			return res.status(400).json({
+				success: false,
+				message: "Lecture already marked as complete",
+			});
+		}
+
+		progress.completedVideos.addToSet(subSectionId);
+		const sections = await Section.find({ _id: { $in: course.courseContent } }).select("subSection");
+		const totalLectures = sections.reduce((total, item) => total + item.subSection.length, 0);
+		progress.completionPercentage = totalLectures
+			? Math.round((Math.min(progress.completedVideos.length, totalLectures) / totalLectures) * 100)
+			: 0;
+		await progress.save();
+
+		return res.status(200).json({
+			success: true,
+			message: "Lecture marked as complete",
+		});
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: error.message,
+		});
+	}
+};

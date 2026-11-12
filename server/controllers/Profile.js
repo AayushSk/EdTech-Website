@@ -103,18 +103,36 @@ exports.getEnrolledCourses=async (req,res) => {
                 message: "User not found",
             });
         }
-        const enrolledCourses = await User.findById(id).populate({
-			path : "courses",
-				populate : {
+		const enrolledCourses = await User.findById(id)
+			.populate({
+				path: "courses",
+				populate: {
 					path: "courseContent",
-			}
-		}
-		).populate("courseProgress").exec();
+				},
+			})
+			.populate("courseProgress")
+			.exec();
+		const enrolledCoursesData = enrolledCourses.toObject();
+		enrolledCoursesData.courses = enrolledCoursesData.courses.map((course) => {
+			const progress = enrolledCoursesData.courseProgress.find(
+				(courseProgress) => courseProgress && String(courseProgress.courseID) === String(course._id),
+			);
+			const totalLectures = (course.courseContent || []).reduce(
+				(total, section) => total + (section?.subSection?.length || 0),
+				0,
+			);
+			const completedLectures = Math.min(progress?.completedVideos?.length || 0, totalLectures);
+			const completionPercentage = totalLectures
+				? Math.round((completedLectures / totalLectures) * 100)
+				: progress?.completionPercentage || 0;
+
+			return { ...course, progressPercentage: completionPercentage };
+		});
         // console.log(enrolledCourses);
         res.status(200).json({
             success: true,
             message: "User Data fetched successfully",
-            data: enrolledCourses,
+            data: enrolledCoursesData,
         });
     } catch (error) {
         return res.status(500).json({

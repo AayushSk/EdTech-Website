@@ -8,6 +8,7 @@ const { default: mongoose } = require("mongoose");
 const crypto = require("crypto");
 const CourseProgress = require("../models/CourseProgress");
 const env = require("../config/env");
+const { publishEvent } = require("../config/kafkaProducer");
 
 exports.capturePayment = async (req, res) => {
     //get courseId and UserID
@@ -144,7 +145,7 @@ exports.verifySignature = async (req, res) => {
                           await User.findByIdAndUpdate(userId, {
                             $push: { courseProgress: newCourseProgress._id },
                           },{new:true});
-                        //send email
+                          //send email
                         const recipient = await User.findById(userId);
                         console.log("recipient=>",course);
                         const courseName = course.courseName;
@@ -153,11 +154,24 @@ exports.verifySignature = async (req, res) => {
                         const userEmail = recipient.email;
                         const userName = recipient.firstName + " " + recipient.lastName;
                         const emailTemplate = courseEnrollmentEmail(courseName,userName, courseDescription, thumbnail);
-                        await mailSender(
-                            userEmail,
-                            `You have successfully enrolled for ${courseName}`,
-                            emailTemplate,
-                        );
+                        // Send enrollment email via Kafka with direct fallback
+                        const emailContent = emailTemplate;
+                        const eventSent = await publishEvent("notifications.email", userEmail, {
+                            eventType: "COURSE_ENROLLMENT_CONFIRMED",
+                            recipient: userEmail,
+                            subject: `You have successfully enrolled for ${courseName}`,
+                            html: emailContent,
+                            metadata: { courseId: course._id, userId },
+                        });
+
+                        if (!eventSent) {
+                            console.log("[enrolleStudent] Falling back to direct mailSender...");
+                            await mailSender(
+                                userEmail,
+                                `You have successfully enrolled for ${courseName}`,
+                                emailContent,
+                            );
+                        }
                         }
                         return res.status(200).json({
                             success:true,
@@ -209,12 +223,27 @@ exports.sendPaymentSuccessEmail = async (req, res) => {
     }
     try{
         const enrolledStudent =  await User.findById(userId);
-        await mailSender(
-            enrolledStudent.email,
-            `Study Notion Payment successful`,
-            paymentSuccess(amount/100, paymentId, orderId, enrolledStudent.firstName, enrolledStudent.lastName),
-        );
-}
+        const receiptHtml = paymentSuccess(amount/100, paymentId, orderId, enrolledStudent.firstName, enrolledStudent.lastName);
+
+        // 1. Publish payment receipt event to Kafka
+        const eventSent = await publishEvent("notifications.email", enrolledStudent.email, {
+            eventType: "PAYMENT_SUCCESS_RECEIPT",
+            recipient: enrolledStudent.email,
+            subject: "Study Notion Payment successful",
+            html: receiptHtml,
+            metadata: { amount: amount / 100, paymentId, orderId },
+        });
+
+        // 2. Fallback if Kafka unconfigured
+        if (!eventSent) {
+            console.log("[sendPaymentSuccessEmail] Falling back to direct mailSender...");
+            await mailSender(
+                enrolledStudent.email,
+                `Study Notion Payment successful`,
+                receiptHtml,
+            );
+        }
+    }
     catch(error) {
         console.error(error);
         return res.status(500).json({

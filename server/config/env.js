@@ -20,9 +20,18 @@ module.exports = {
     JWT_SECRET: process.env.JWT_SECRET,
     FRONTEND_URL: process.env.FRONTEND_URL,
     CONTACT_EMAIL: process.env.CONTACT_EMAIL,
+    GOOGLE_SHEETS_WEB_APP_URL: process.env.GOOGLE_SHEETS_WEB_APP_URL,
+    GOOGLE_SHEETS_SHARED_SECRET: process.env.GOOGLE_SHEETS_SHARED_SECRET,
     SUPPORT_EMAIL: process.env.SUPPORT_EMAIL,
     DEMO_USERS: demoUsers,
     CORS_ORIGIN: allowedOrigins,
+    KAFKA: {
+        REST_ENDPOINT: process.env.CONFLUENT_REST_ENDPOINT || "",
+        CLUSTER_ID: process.env.CONFLUENT_CLUSTER_ID || "",
+        BOOTSTRAP_SERVER: process.env.CONFLUENT_BOOTSTRAP_SERVER || "",
+        API_KEY: process.env.CONFLUENT_API_KEY || "",
+        API_SECRET: process.env.CONFLUENT_API_SECRET || "",
+    },
     CLOUDINARY: {
         CLOUD_NAME: process.env.CLOUD_NAME,
         API_KEY: process.env.API_KEY,

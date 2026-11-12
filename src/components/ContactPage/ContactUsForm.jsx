@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "react-hot-toast"
 
 import CountryCode from "../../data/countrycode.json"
 import { apiConnector } from "../../services/apiconnector"
@@ -11,37 +12,36 @@ const ContactUsForm = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitSuccessful },
+    formState: { errors },
   } = useForm()
 
   const submitContactForm = async (data) => {
-    // console.log("Form Data - ", data)
     try {
       setLoading(true)
-      await apiConnector(
+      const response = await apiConnector(
         "POST",
         contactusEndpoint.CONTACT_US_API,
-        data
+        {
+          firstName: data.firstname,
+          lastName: data.lastname,
+          email: data.email,
+          countryCode: data.countrycode,
+          phoneNo: data.phoneNo,
+          message: data.message,
+        }
       )
-      // console.log("Email Res - ", res)
-      setLoading(false)
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "We could not send your message.")
+      }
+
+      toast.success(response.data.message || "Your message was sent successfully.")
+      reset()
     } catch (error) {
-      console.log("ERROR MESSAGE - ", error.message)
+      toast.error(error.response?.data?.message || error.message || "We could not send your message.")
+    } finally {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      reset({
-        email: "",
-        firstname: "",
-        lastname: "",
-        message: "",
-        phoneNo: "",
-      })
-    }
-  }, [reset, isSubmitSuccessful])
 
   return (
     <form
@@ -110,10 +110,8 @@ const ContactUsForm = () => {
         <div className="flex gap-5">
           <div className="flex w-[96px] flex-col gap-2">
             <select
-              type="text"
-              name="firstname"
-              id="firstname"
-              placeholder="Enter first name"
+              name="countrycode"
+              id="countrycode"
               className="bg-richblack-800 px-2 py-2 rounded-md border-b-richblack-500 border-b  mt-1"
               {...register("countrycode", { required: true })}
             >

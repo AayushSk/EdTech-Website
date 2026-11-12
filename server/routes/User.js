@@ -6,9 +6,9 @@ const router = express.Router()
 const {
   login,
   signup,
-  sendotp,
   changePassword,
 } = require("../controllers/Auth")
+const { sendotp } = require("../controllers/OTP")
 
 const {isDemo}=require("../middlewares/demo");
 const {
