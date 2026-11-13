@@ -1,3 +1,4 @@
+const http = require("http");
 const kafka = require("./config/kafka");
 const env = require("./config/env");
 const { processEmailEvent } = require("./handlers/emailHandler");
@@ -12,6 +13,39 @@ const consumer = kafka.consumer({
 });
 
 const producer = kafka.producer();
+let kafkaConnected = false;
+let healthServer;
+
+function startHealthServer() {
+    const port = Number(process.env.PORT || 3001);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error(`Invalid PORT value: ${process.env.PORT}`);
+    }
+
+    healthServer = http.createServer((req, res) => {
+        if (req.method !== "GET" || req.url !== "/healthz") {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "not_found" }));
+            return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+            status: "ok",
+            kafkaConnected,
+            topic: TOPIC_EMAIL,
+        }));
+    });
+
+    return new Promise((resolve, reject) => {
+        healthServer.once("error", reject);
+        healthServer.listen(port, "0.0.0.0", () => {
+            healthServer.removeListener("error", reject);
+            console.log(`[Worker] Health endpoint listening on port ${port} at /healthz.`);
+            resolve();
+        });
+    });
+}
 
 /**
  * Routes failed events to the Dead Letter Queue after max retries
@@ -37,6 +71,8 @@ async function sendToDLQ(topic, partition, message, errorMsg) {
 }
 
 async function start() {
+    await startHealthServer();
+
     console.log("==================================================");
     console.log("🚀 Starting StudyNotion Apache Kafka Consumer Worker");
     console.log(`Connecting to Confluent Cloud: ${env.KAFKA.BOOTSTRAP_SERVER}`);
@@ -45,6 +81,7 @@ async function start() {
 
     await consumer.connect();
     await producer.connect();
+    kafkaConnected = true;
 
     await consumer.subscribe({ topic: TOPIC_EMAIL, fromBeginning: false });
     console.log(`[Worker] Listening for events on topic: "${TOPIC_EMAIL}"...`);
@@ -108,8 +145,14 @@ async function start() {
 const shutdown = async () => {
     console.log("\n[Worker] Gracefully disconnecting Kafka consumer and producer...");
     try {
+        kafkaConnected = false;
         await consumer.disconnect();
         await producer.disconnect();
+        if (healthServer) {
+            await new Promise((resolve, reject) => {
+                healthServer.close((error) => error ? reject(error) : resolve());
+            });
+        }
         console.log("[Worker] Disconnected. Exiting process.");
         process.exit(0);
     } catch (err) {
