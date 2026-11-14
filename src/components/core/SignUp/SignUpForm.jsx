@@ -39,7 +39,6 @@ const SignUpForm = ({ accountType }) => {
             accountType,
         }
         dispatch(setSignupData(signUpData))
-        console.log(signUpData);
         if (signUpData !== null) navigate('/verify-email')
         dispatch(sendOtp(formData.email, navigate))
     })

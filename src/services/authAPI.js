@@ -1,6 +1,6 @@
 import { toast } from "react-hot-toast"
 
-import { setLoading, setToken } from "../slices/authSlice"
+import { setLoading, setSignupData, setToken } from "../slices/authSlice"
 import { resetCart } from "../slices/cartSlice"
 import { setUser } from "../slices/profileSlice"
 import { endpoints } from "../services/apis"
@@ -65,11 +65,8 @@ export function signUp(
         lastName,
         email,
         password,
-        confirmPassword,
         otp,
       })
-
-      console.log("SIGNUP API RESPONSE............", response)
 
       if (!response.data.success) {
         toast.dismiss(toastId)
@@ -78,10 +75,10 @@ export function signUp(
       }
       // dispatch(setProgress(100));
       toast.success("Signup Successful")
+      dispatch(setSignupData(null))
       navigate("/login")
     } catch (error) {
       // dispatch(setProgress(100));
-      console.log("SIGNUP API ERROR............", error)
       toast.error(error?.response?.data?.message)
       navigate('/signup')
     }

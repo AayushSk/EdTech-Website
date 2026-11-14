@@ -28,7 +28,6 @@ exports.signup = async (req, res) => {
 			!lastName ||
 			!email ||
 			!password ||
-			!confirmPassword ||
 			!otp||
 			!accountType
 		) {
@@ -43,7 +42,7 @@ exports.signup = async (req, res) => {
 			});
 		}
 		// Check if password and confirm password match
-		if (password !== confirmPassword) {
+		if (confirmPassword && password !== confirmPassword) {
 			return res.status(400).json({
 				success: false,
 				message:
@@ -62,7 +61,6 @@ exports.signup = async (req, res) => {
 
 		// Find the most recent OTP for the email
 		const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-		console.log(response);
 		if (response.length === 0) {
 			// OTP not found for the email
 			return res.status(400).json({
@@ -102,9 +100,12 @@ exports.signup = async (req, res) => {
 			image: `https://api.dicebear.com/6.x/initials/svg?seed=${firstName} ${lastName}&backgroundColor=00897b,00acc1,039be5,1e88e5,3949ab,43a047,5e35b1,7cb342,8e24aa,c0ca33,d81b60,e53935,f4511e,fb8c00,fdd835,ffb300,ffd5dc,ffdfbf,c0aede,d1d4f9,b6e3f4&backgroundType=solid,gradientLinear&backgroundRotation=0,360,-350,-340,-330,-320&fontFamily=Arial&fontWeight=600`,
 		});
 
+		const userResponse = user.toObject();
+		delete userResponse.password;
+
 		return res.status(200).json({
 			success: true,
-			user,
+			user: userResponse,
 			message: "User registered successfully",
 		});
 	} catch (error) {
