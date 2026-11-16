@@ -1,6 +1,7 @@
 const RatingAndReview=require("../models/RatingAndReview")
 const Course = require("../models/Course");
 const { default: mongoose } = require("mongoose");
+const { parsePagination } = require("../utils/pagination");
 
 
 exports.createRating = async (req,res)=>{
@@ -89,24 +90,54 @@ exports.getAverageRating = async (res,req)=>{
 
 
 
-exports.getAllRating = async (req,res) => {
-    //get sorted by rating
+//getAllRating with cursor-based pagination and strict limit clamping
+exports.getAllRating = async (req, res) => {
     try {
-        const allReviews = await RatingAndReview.find(
-            ).sort({rating: -1})
-            .populate({path: "user",
-            select: "firstName lastName email image"})
-            .populate({path: "course",
-            select: "courseName"})
+        const { limit } = parsePagination(req.query, 10, 10);
+        const cursor = req.query.cursor; // Last seen _id from previous batch
+
+        // Validate cursor format if provided (must be valid 24-char hex Mongo ObjectId)
+        let filter = {};
+        if (cursor) {
+            if (!mongoose.Types.ObjectId.isValid(cursor)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid cursor format",
+                });
+            }
+            filter = { _id: { $lt: new mongoose.Types.ObjectId(cursor) } };
+        }
+
+        // Fetch one extra item (limit + 1) to determine if next page exists without full collection scan
+        const reviews = await RatingAndReview.find(filter)
+            .sort({ _id: -1 })
+            .limit(limit + 1)
+            .populate({
+                path: "user",
+                select: "firstName lastName email image",
+            })
+            .populate({
+                path: "course",
+                select: "courseName",
+            })
             .exec();
-            
+
+        const hasNextPage = reviews.length > limit;
+        const data = hasNextPage ? reviews.slice(0, limit) : reviews;
+        const nextCursor = data.length > 0 ? data[data.length - 1]._id : null;
+
         return res.status(200).json({
             success: true,
-            message:"all reviews fetched successfully",
-            data:allReviews,
+            message: "All reviews fetched successfully",
+            data: data,
+            pagination: {
+                limit: limit,
+                hasNextPage: hasNextPage,
+                nextCursor: hasNextPage ? nextCursor : null,
+            },
         });
     } catch (error) {
         console.log(error);
-        res.status(500).json({message: error.message});
+        res.status(500).json({ message: error.message });
     }
-}
+};

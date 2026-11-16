@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Course = require("../models/Course");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const env = require("../config/env");
+const { parsePagination } = require("../utils/pagination");
 // Method for updating a profile
 exports.updateProfile = async (req, res) => {
 	try {
@@ -132,17 +133,14 @@ exports.getEnrolledCourses=async (req,res) => {
 			return { ...course, progressPercentage: completionPercentage };
 		});
 
-		// Apply pagination to enrolled courses
-		const page = req.query.page ? parseInt(req.query.page) : null;
-		const limit = req.query.limit ? parseInt(req.query.limit) : null;
-
+		// Apply pagination to enrolled courses if requested, strictly clamping limit to max 10
 		let paginatedCourses = allMappedCourses;
 		let paginationMeta = null;
 
-		if (page && limit) {
+		if (req.query.page || req.query.limit) {
+			const { page, limit, skip } = parsePagination(req.query, 10, 10);
 			const totalCourses = allMappedCourses.length;
 			const totalPages = Math.ceil(totalCourses / limit);
-			const skip = (page - 1) * limit;
 
 			paginatedCourses = allMappedCourses.slice(skip, skip + limit);
 			paginationMeta = {

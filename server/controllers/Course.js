@@ -7,6 +7,7 @@ const CourseProgress = require("../models/CourseProgress")
 const Section = require("../models/Section")
 const SubSection = require("../models/SubSection");
 const env = require("../config/env");
+const { parsePagination, sanitizeRegex } = require("../utils/pagination");
 
 // Function to create a new course
 exports.createCourse = async (req, res) => {
@@ -138,9 +139,7 @@ exports.createCourse = async (req, res) => {
 
 exports.getAllCourses = async (req, res) => {
 	try {
-		const page = parseInt(req.query.page) || 1;
-		const limit = parseInt(req.query.limit) || 10;
-		const skip = (page - 1) * limit;
+		const { page, limit, skip } = parsePagination(req.query, 10, 10);
 
 		const totalCourses = await Course.countDocuments();
 		const totalPages = Math.ceil(totalCourses / limit);
@@ -234,9 +233,7 @@ exports.getInstructorCourses = async (req, res) => {
 	try {
 		// Get user ID from request object
 		const userId = req.user.id;
-		const page = parseInt(req.query.page) || 1;
-		const limit = parseInt(req.query.limit) || 10;
-		const skip = (page - 1) * limit;
+		const { page, limit, skip } = parsePagination(req.query, 10, 10);
 
 		const totalCourses = await Course.countDocuments({ instructor: userId });
 		const totalPages = Math.ceil(totalCourses / limit);
@@ -489,16 +486,21 @@ exports.deleteCourse = async (req, res) => {
   exports.searchCourse = async (req, res) => {
 	try {
 	  const { searchQuery } = req.body;
-	  const page = parseInt(req.query.page) || parseInt(req.body.page) || 1;
-	  const limit = parseInt(req.query.limit) || parseInt(req.body.limit) || 10;
-	  const skip = (page - 1) * limit;
+	  const paginationInput = {
+		page: req.query.page || req.body.page,
+		limit: req.query.limit || req.body.limit,
+	  };
+	  const { page, limit, skip } = parsePagination(paginationInput, 10, 10);
 
-	  const filter = searchQuery
+	  // Sanitize and escape regex characters to prevent ReDoS or regex injection
+	  const safeQuery = sanitizeRegex(searchQuery, 100);
+
+	  const filter = safeQuery
 		? {
 			$or: [
-			  { courseName: { $regex: searchQuery, $options: "i" } },
-			  { courseDescription: { $regex: searchQuery, $options: "i" } },
-			  { tag: { $regex: searchQuery, $options: "i" } },
+			  { courseName: { $regex: safeQuery, $options: "i" } },
+			  { courseDescription: { $regex: safeQuery, $options: "i" } },
+			  { tag: { $regex: safeQuery, $options: "i" } },
 			],
 		  }
 		: {};

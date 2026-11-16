@@ -3,10 +3,15 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 const env = require('../config/env');
+const sanitizeInput = require('../middlewares/sanitize');
 
 function initMiddlewares(app) {
-    app.use(express.json());
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     app.use(cookieParser());
+
+    // Security: sanitize all incoming request bodies, queries, and params
+    app.use(sanitizeInput);
 
     app.use(
         cors({
@@ -30,4 +35,3 @@ function initMiddlewares(app) {
 }
 
 module.exports = initMiddlewares;
-
