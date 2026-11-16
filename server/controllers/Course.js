@@ -138,6 +138,13 @@ exports.createCourse = async (req, res) => {
 
 exports.getAllCourses = async (req, res) => {
 	try {
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = (page - 1) * limit;
+
+		const totalCourses = await Course.countDocuments();
+		const totalPages = Math.ceil(totalCourses / limit);
+
 		const allCourses = await Course.find(
 			{},
 			{
@@ -150,10 +157,21 @@ exports.getAllCourses = async (req, res) => {
 			}
 		)
 			.populate("instructor")
+			.skip(skip)
+			.limit(limit)
 			.exec();
+
 		return res.status(200).json({
 			success: true,
 			data: allCourses,
+			pagination: {
+				currentPage: page,
+				totalPages: totalPages,
+				totalCourses: totalCourses,
+				limit: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1,
+			},
 		});
 	} catch (error) {
 		console.log(error);
@@ -216,14 +234,31 @@ exports.getInstructorCourses = async (req, res) => {
 	try {
 		// Get user ID from request object
 		const userId = req.user.id;
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = (page - 1) * limit;
 
-		// Find all courses of the instructor
-		const allCourses = await Course.find({ instructor: userId });
+		const totalCourses = await Course.countDocuments({ instructor: userId });
+		const totalPages = Math.ceil(totalCourses / limit);
+
+		// Find all courses of the instructor with pagination
+		const allCourses = await Course.find({ instructor: userId })
+			.sort({ createdAt: -1 })
+			.skip(skip)
+			.limit(limit);
 
 		// Return all courses of the instructor
 		res.status(200).json({
 			success: true,
 			data: allCourses,
+			pagination: {
+				currentPage: page,
+				totalPages: totalPages,
+				totalCourses: totalCourses,
+				limit: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1,
+			},
 		});
 	} catch (error) {
 		// Handle any errors that occur during the fetching of the courses
@@ -453,30 +488,49 @@ exports.deleteCourse = async (req, res) => {
   //search course by title,description and tags array
   exports.searchCourse = async (req, res) => {
 	try {
-	  const  { searchQuery }  = req.body
-	//   console.log("searchQuery : ", searchQuery)
-	  const courses = await Course.find({
-		$or: [
-		  { courseName: { $regex: searchQuery, $options: "i" } },
-		  { courseDescription: { $regex: searchQuery, $options: "i" } },
-		  { tag: { $regex: searchQuery, $options: "i" } },
-		],
-  })
-  .populate({
-	path: "instructor",  })
-  .populate("category")
-  .populate("ratingAndReviews")
-  .exec();
+	  const { searchQuery } = req.body;
+	  const page = parseInt(req.query.page) || parseInt(req.body.page) || 1;
+	  const limit = parseInt(req.query.limit) || parseInt(req.body.limit) || 10;
+	  const skip = (page - 1) * limit;
 
-  return res.status(200).json({
-	success: true,
-	data: courses,
-	  })
+	  const filter = searchQuery
+		? {
+			$or: [
+			  { courseName: { $regex: searchQuery, $options: "i" } },
+			  { courseDescription: { $regex: searchQuery, $options: "i" } },
+			  { tag: { $regex: searchQuery, $options: "i" } },
+			],
+		  }
+		: {};
+
+	  const totalCourses = await Course.countDocuments(filter);
+	  const totalPages = Math.ceil(totalCourses / limit);
+
+	  const courses = await Course.find(filter)
+		.populate({ path: "instructor" })
+		.populate("category")
+		.populate("ratingAndReviews")
+		.skip(skip)
+		.limit(limit)
+		.exec();
+
+	  return res.status(200).json({
+		success: true,
+		data: courses,
+		pagination: {
+			currentPage: page,
+			totalPages: totalPages,
+			totalCourses: totalCourses,
+			limit: limit,
+			hasNextPage: page < totalPages,
+			hasPrevPage: page > 1,
+		},
+	  });
 	} catch (error) {
 	  return res.status(500).json({
 		success: false,
 		message: error.message,
-	  })
+	  });
 	}		
 }					
 

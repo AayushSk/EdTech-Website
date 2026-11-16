@@ -112,8 +112,11 @@ exports.getEnrolledCourses=async (req,res) => {
 			})
 			.populate("courseProgress")
 			.exec();
+
 		const enrolledCoursesData = enrolledCourses.toObject();
-		enrolledCoursesData.courses = enrolledCoursesData.courses.map((course) => {
+
+		// Compute progress percentage for all enrolled courses
+		const allMappedCourses = (enrolledCoursesData.courses || []).map((course) => {
 			const progress = enrolledCoursesData.courseProgress.find(
 				(courseProgress) => courseProgress && String(courseProgress.courseID) === String(course._id),
 			);
@@ -128,12 +131,38 @@ exports.getEnrolledCourses=async (req,res) => {
 
 			return { ...course, progressPercentage: completionPercentage };
 		});
-        // console.log(enrolledCourses);
-        res.status(200).json({
-            success: true,
-            message: "User Data fetched successfully",
-            data: enrolledCoursesData,
-        });
+
+		// Apply pagination to enrolled courses
+		const page = req.query.page ? parseInt(req.query.page) : null;
+		const limit = req.query.limit ? parseInt(req.query.limit) : null;
+
+		let paginatedCourses = allMappedCourses;
+		let paginationMeta = null;
+
+		if (page && limit) {
+			const totalCourses = allMappedCourses.length;
+			const totalPages = Math.ceil(totalCourses / limit);
+			const skip = (page - 1) * limit;
+
+			paginatedCourses = allMappedCourses.slice(skip, skip + limit);
+			paginationMeta = {
+				currentPage: page,
+				totalPages: totalPages,
+				totalCourses: totalCourses,
+				limit: limit,
+				hasNextPage: page < totalPages,
+				hasPrevPage: page > 1,
+			};
+		}
+
+		enrolledCoursesData.courses = paginatedCourses;
+
+		res.status(200).json({
+			success: true,
+			message: "User Data fetched successfully",
+			data: enrolledCoursesData,
+			...(paginationMeta && { pagination: paginationMeta }),
+		});
     } catch (error) {
         return res.status(500).json({
             success: false,

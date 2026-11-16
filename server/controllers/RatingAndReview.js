@@ -109,31 +109,48 @@ exports.getAverageRating = async (req,res)=>{
     }
 }
 
-//getAllRating
+//getAllRating with cursor-based pagination
 exports.getAllRating = async (req, res) => {
-    try{
-        const allReviews = await RatingAndReview.find({})
-                                                .sort({rating:"desc"})
-                                                .populate({
-                                                    path:"user",
-                                                    select:"firstName lastName email image"
-                                                })
-                                                .populate({
-                                                    path:"course",
-                                                    select:"courseName",
-                                                })
-                                                .exec();
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const cursor = req.query.cursor; // Last seen _id from previous batch
+
+        // Keyset filter: if cursor provided, fetch reviews older than this _id
+        const filter = cursor ? { _id: { $lt: cursor } } : {};
+
+        // Fetch one extra item (limit + 1) to determine if next page exists without countDocuments()
+        const reviews = await RatingAndReview.find(filter)
+            .sort({ _id: -1 }) // Strictly ordered by immutable _id descending
+            .limit(limit + 1)
+            .populate({
+                path: "user",
+                select: "firstName lastName email image",
+            })
+            .populate({
+                path: "course",
+                select: "courseName",
+            })
+            .exec();
+
+        const hasNextPage = reviews.length > limit;
+        const data = hasNextPage ? reviews.slice(0, limit) : reviews;
+        const nextCursor = data.length > 0 ? data[data.length - 1]._id : null;
+
         return res.status(200).json({
-            success:true,
-            message:"All reviews fetched successfully",
-            data:allReviews,
+            success: true,
+            message: "Reviews fetched successfully",
+            data: data,
+            pagination: {
+                limit: limit,
+                hasNextPage: hasNextPage,
+                nextCursor: hasNextPage ? nextCursor : null,
+            },
         });
-    }
-    catch(error){
+    } catch (error) {
         console.log(error);
         return res.status(500).json({
-            success:false,
+            success: false,
             message: error.message,
-        })
+        });
     }
-}
+};
