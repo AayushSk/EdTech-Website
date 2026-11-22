@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const CourseProgress = require("../models/CourseProgress");
 const env = require("../config/env");
 const { publishEvent } = require("../config/kafkaProducer");
+const { invalidateCache, invalidatePattern, CACHE_KEYS } = require("../utils/cache");
 
 exports.capturePayment = async (req, res) => {
     //get courseId and UserID
@@ -208,7 +209,16 @@ exports.verifySignature = async (req, res) => {
                             emailTemplate,
                         );
                     }
+
+                    // Invalidate course details and instructor dashboard
+                    await invalidateCache(CACHE_KEYS.COURSE_DETAILS(course_id));
+                    if (course?.instructor) {
+                        await invalidateCache(CACHE_KEYS.INSTRUCTOR_DASHBOARD(course.instructor));
+                    }
                 }
+
+                // Invalidate student's enrolled courses cache
+                await invalidatePattern(`user:${userId}:enrolled_courses:*`);
 
                 // 5. Store payment record to lock idempotency anchor
                 await PaymentRecord.create({

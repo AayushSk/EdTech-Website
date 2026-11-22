@@ -4,6 +4,7 @@ const SubSection = require("../models/SubSection");
 const Course = require("../models/Course");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const env = require("../config/env");
+const { invalidateCache, CACHE_KEYS } = require("../utils/cache");
 // Create a new sub-section for a given section
 exports.createSubSection = async (req, res) => {
 	try {
@@ -49,6 +50,12 @@ exports.createSubSection = async (req, res) => {
 		).populate("subSection");
 
 		const updatedCourse = await Course.findById(courseId).populate({ path: "courseContent", populate: { path: "subSection" } }).exec();
+		
+		// Invalidate cached course details
+		if (courseId) {
+			await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+		}
+
 		// Return the updated section in the response
 		return res.status(200).json({ success: true, data: updatedCourse });
 	} catch (error) {
@@ -91,6 +98,12 @@ exports.updateSubSection = async (req,res) => {
 
 		
 		const updatedCourse = await Course.findById(courseId).populate({ path: "courseContent", populate: { path: "subSection" } }).exec();
+		
+		// Invalidate cached course details
+		if (courseId) {
+			await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+		}
+
 		// Return the updated section in the response
 		return res.status(200).json({ success: true, data: updatedCourse });
 	} catch (error) {
@@ -134,6 +147,12 @@ exports.deleteSubSection = async(req, res) => {
 	await SubSection.findByIdAndDelete(subSectionId);
 	await Section.findByIdAndUpdate({_id:sectionId},{$pull:{subSection:subSectionId}},{new:true});
 	const updatedCourse = await Course.findById(courseId).populate({ path: "courseContent", populate: { path: "subSection" } }).exec();
+	
+	// Invalidate cached course details
+	if (courseId) {
+		await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+	}
+
 	return res.status(200).json({ success: true, message: "Sub-section deleted", data: updatedCourse });
 		
 	} catch (error) {

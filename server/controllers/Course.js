@@ -8,6 +8,7 @@ const Section = require("../models/Section")
 const SubSection = require("../models/SubSection");
 const env = require("../config/env");
 const { parsePagination, sanitizeRegex } = require("../utils/pagination");
+const { getOrSetCache, invalidateCache, invalidatePattern, CACHE_KEYS } = require("../utils/cache");
 
 // Function to create a new course
 exports.createCourse = async (req, res) => {
@@ -120,6 +121,16 @@ exports.createCourse = async (req, res) => {
 			},
 			{ new: true }
 		);
+		// Invalidate course list caches so new course shows up in catalog
+		await invalidatePattern("courses:page:*");
+		if (category) {
+			await invalidateCache(CACHE_KEYS.CATEGORY_PAGE_DETAILS(category));
+		}
+		if (userId) {
+			await invalidateCache(CACHE_KEYS.INSTRUCTOR_DASHBOARD(userId));
+			await invalidatePattern(`instructor:${userId}:courses:*`);
+		}
+
 		// Return the new course and a success message
 		res.status(200).json({
 			success: true,
@@ -140,37 +151,46 @@ exports.createCourse = async (req, res) => {
 exports.getAllCourses = async (req, res) => {
 	try {
 		const { page, limit, skip } = parsePagination(req.query, 10, 10);
+		const cacheKey = CACHE_KEYS.ALL_COURSES(page, limit);
 
-		const totalCourses = await Course.countDocuments();
-		const totalPages = Math.ceil(totalCourses / limit);
+		// Cache for 10 minutes (600 seconds)
+		const cachedResult = await getOrSetCache(cacheKey, 600, async () => {
+			const totalCourses = await Course.countDocuments();
+			const totalPages = Math.ceil(totalCourses / limit);
 
-		const allCourses = await Course.find(
-			{},
-			{
-				courseName: true,
-				price: true,
-				thumbnail: true,
-				instructor: true,
-				ratingAndReviews: true,
-				studentsEnroled: true,
-			}
-		)
-			.populate("instructor")
-			.skip(skip)
-			.limit(limit)
-			.exec();
+			const allCourses = await Course.find(
+				{},
+				{
+					courseName: true,
+					price: true,
+					thumbnail: true,
+					instructor: true,
+					ratingAndReviews: true,
+					studentsEnroled: true,
+				}
+			)
+				.populate("instructor")
+				.skip(skip)
+				.limit(limit)
+				.exec();
+
+			return {
+				allCourses,
+				pagination: {
+					currentPage: page,
+					totalPages: totalPages,
+					totalCourses: totalCourses,
+					limit: limit,
+					hasNextPage: page < totalPages,
+					hasPrevPage: page > 1,
+				},
+			};
+		});
 
 		return res.status(200).json({
 			success: true,
-			data: allCourses,
-			pagination: {
-				currentPage: page,
-				totalPages: totalPages,
-				totalCourses: totalCourses,
-				limit: limit,
-				hasNextPage: page < totalPages,
-				hasPrevPage: page > 1,
-			},
+			data: cachedResult.allCourses,
+			pagination: cachedResult.pagination,
 		});
 	} catch (error) {
 		console.log(error);
@@ -188,32 +208,51 @@ exports.getAllCourses = async (req, res) => {
 
 
 
-exports.getCourseDetails = async (req,res)=>{
+exports.getCourseDetails = async (req, res) => {
 	try {
-		const {courseId}=req.body;
-	const courseDetails=await Course.find({_id: courseId}).populate({path:"instructor",
-	populate:{path:"additionalDetails"}})
-	.populate("category")
-	.populate({                    //only populate user name and image
-		path:"ratingAndReviews",
-		populate:{path:"user"
-		,select:"firstName lastName accountType image"}
-	})
-	.populate({path:"courseContent",populate:{path:"subSection"}})
-	.exec();
+		const { courseId } = req.body;
+		if (!courseId) {
+			return res.status(400).json({
+				success: false,
+				message: "Course ID is required",
+			});
+		}
 
-	if(!courseDetails){
-		return res.status(404).json({
-            success:false,
-            message:"Course Not Found"
-        })
-	}
-	return res.status(200).json({
-        success:true,
-		message:"Course fetched successfully now",
-        data:courseDetails
-    });
-		
+		const cacheKey = CACHE_KEYS.COURSE_DETAILS(courseId);
+
+		// Cache for 30 minutes (1800 seconds)
+		const courseDetails = await getOrSetCache(cacheKey, 1800, async () => {
+			const details = await Course.find({ _id: courseId })
+				.populate({
+					path: "instructor",
+					populate: { path: "additionalDetails" },
+				})
+				.populate("category")
+				.populate({
+					path: "ratingAndReviews",
+					populate: {
+						path: "user",
+						select: "firstName lastName accountType image",
+					},
+				})
+				.populate({ path: "courseContent", populate: { path: "subSection" } })
+				.exec();
+
+			return details && details.length > 0 ? details : null;
+		});
+
+		if (!courseDetails) {
+			return res.status(404).json({
+				success: false,
+				message: "Course Not Found",
+			});
+		}
+
+		return res.status(200).json({
+			success: true,
+			message: "Course fetched successfully now",
+			data: courseDetails,
+		});
 	} catch (error) {
 		console.log(error);
         return res.status(404).json({
@@ -234,28 +273,37 @@ exports.getInstructorCourses = async (req, res) => {
 		// Get user ID from request object
 		const userId = req.user.id;
 		const { page, limit, skip } = parsePagination(req.query, 10, 10);
+		const cacheKey = CACHE_KEYS.INSTRUCTOR_COURSES(userId, page, limit);
 
-		const totalCourses = await Course.countDocuments({ instructor: userId });
-		const totalPages = Math.ceil(totalCourses / limit);
+		// Cache for 10 minutes (600 seconds)
+		const cachedResult = await getOrSetCache(cacheKey, 600, async () => {
+			const totalCourses = await Course.countDocuments({ instructor: userId });
+			const totalPages = Math.ceil(totalCourses / limit);
 
-		// Find all courses of the instructor with pagination
-		const allCourses = await Course.find({ instructor: userId })
-			.sort({ createdAt: -1 })
-			.skip(skip)
-			.limit(limit);
+			// Find all courses of the instructor with pagination
+			const allCourses = await Course.find({ instructor: userId })
+				.sort({ createdAt: -1 })
+				.skip(skip)
+				.limit(limit);
+
+			return {
+				allCourses,
+				pagination: {
+					currentPage: page,
+					totalPages: totalPages,
+					totalCourses: totalCourses,
+					limit: limit,
+					hasNextPage: page < totalPages,
+					hasPrevPage: page > 1,
+				},
+			};
+		});
 
 		// Return all courses of the instructor
 		res.status(200).json({
 			success: true,
-			data: allCourses,
-			pagination: {
-				currentPage: page,
-				totalPages: totalPages,
-				totalCourses: totalCourses,
-				limit: limit,
-				hasNextPage: page < totalPages,
-				hasPrevPage: page > 1,
-			},
+			data: cachedResult.allCourses,
+			pagination: cachedResult.pagination,
 		});
 	} catch (error) {
 		// Handle any errors that occur during the fetching of the courses
@@ -326,6 +374,21 @@ exports.editCourse = async (req, res) => {
 		})
 		.exec()
   
+	  // Invalidate specific course cache, category page, and paginated course list
+	  await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+	  await invalidatePattern("courses:page:*");
+	  if (course.category) {
+		await invalidateCache(CACHE_KEYS.CATEGORY_PAGE_DETAILS(course.category._id || course.category));
+	  }
+	  if (updates.category && String(updates.category) !== String(course.category?._id || course.category)) {
+		await invalidateCache(CACHE_KEYS.CATEGORY_PAGE_DETAILS(updates.category));
+	  }
+	  const instructorId = course.instructor?._id || course.instructor || req.user.id;
+	  if (instructorId) {
+		await invalidateCache(CACHE_KEYS.INSTRUCTOR_DASHBOARD(instructorId));
+		await invalidatePattern(`instructor:${instructorId}:courses:*`);
+	  }
+
 	  res.json({
 		success: true,
 		message: "Course updated successfully",
@@ -430,11 +493,12 @@ exports.deleteCourse = async (req, res) => {
 	  }
   
 	  // Unenroll students from the course
-	  const studentsEnrolled = course.studentsEnrolled
+	  const studentsEnrolled = course.studentsEnrolled || []
 	  for (const studentId of studentsEnrolled) {
 		await User.findByIdAndUpdate(studentId, {
 		  $pull: { courses: courseId },
-		})
+		});
+		await invalidatePattern(`user:${studentId}:enrolled_courses:*`);
 	  }
   
 	  // Delete sections and sub-sections
@@ -466,6 +530,18 @@ exports.deleteCourse = async (req, res) => {
 		$pull: { courses: courseId },
 		 })
   
+	  // Invalidate course caches
+	  await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+	  await invalidatePattern("courses:page:*");
+	  if (course.category) {
+		await invalidateCache(CACHE_KEYS.CATEGORY_PAGE_DETAILS(course.category._id || course.category));
+	  }
+	  const instructorId = course.instructor?._id || course.instructor;
+	  if (instructorId) {
+		await invalidateCache(CACHE_KEYS.INSTRUCTOR_DASHBOARD(instructorId));
+		await invalidatePattern(`instructor:${instructorId}:courses:*`);
+	  }
+
 	  return res.status(200).json({
 		success: true,
 		message: "Course deleted successfully",
@@ -599,6 +675,9 @@ exports.markLectureAsComplete = async (req, res) => {
 			? Math.round((Math.min(progress.completedVideos.length, totalLectures) / totalLectures) * 100)
 			: 0;
 		await progress.save();
+
+		// Invalidate user enrolled courses cache so progress updates in real-time
+		await invalidatePattern(`user:${userId}:enrolled_courses:*`);
 
 		return res.status(200).json({
 			success: true,

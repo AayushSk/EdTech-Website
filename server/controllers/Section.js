@@ -1,5 +1,6 @@
 const Section = require("../models/Section");
 const Course = require("../models/Course");
+const { invalidateCache, CACHE_KEYS } = require("../utils/cache");
 
 // CREATE a new section
 exports.createSection = async (req, res) => {
@@ -44,6 +45,11 @@ exports.createSection = async (req, res) => {
 			})
 			.exec();
 
+		// Invalidate cached course details so students/visitors fetch fresh content
+		if (courseId) {
+			await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+		}
+
 		// Return the updated course object in the response
 		res.status(200).json({
 			success: true,
@@ -71,6 +77,12 @@ exports.updateSection = async (req, res) => {
 			{ new: true }
 		);
 		const updatedCourse = await Course.findById(courseId).populate({ path: "courseContent", populate: { path: "subSection" } }).exec();
+
+		// Invalidate cached course details
+		if (courseId) {
+			await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+		}
+
 		res.status(200).json({
 			success: true,
 			message: "Section updated successfully",
@@ -91,6 +103,12 @@ exports.deleteSection = async (req, res) => {
 	try {
 		const { sectionId,courseId } = req.body;
 		await Section.findByIdAndDelete(sectionId);
+		if (courseId) {
+			await Course.findByIdAndUpdate(courseId, {
+				$pull: { courseContent: sectionId },
+			});
+			await invalidateCache(CACHE_KEYS.COURSE_DETAILS(courseId));
+		}
 		const updatedCourse = await Course.findById(courseId).populate({ path: "courseContent", populate: { path: "subSection" } }).exec();
 		res.status(200).json({
 			success: true,

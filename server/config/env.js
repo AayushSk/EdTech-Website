@@ -47,4 +47,8 @@ module.exports = {
         USER: process.env.MAIL_USER,
         PASS: process.env.MAIL_PASS,
     },
+    REDIS: {
+        URL: process.env.UPSTASH_REDIS_REST_URL || "",
+        TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+    },
 };
