@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import IconBtn from '../../../../common/IconBtn';
 import { CiCirclePlus } from "react-icons/ci";
@@ -16,6 +16,7 @@ const CourseBuilderForm = () => {
   const { course } = useSelector((state) => state.course)
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const { token } = useSelector((state) => state.auth)
 
   const cancelEdit = () => {
@@ -42,33 +43,36 @@ const CourseBuilderForm = () => {
   }
 
   const onSubmit = async (data) => {
+    if (loadingRef.current) return
+
+    loadingRef.current = true
     setLoading(true);
-    let result;
+    try {
+      let result;
 
-    if (editSectionName) {
-      result = await updateSection({
-        sectionName: data.sectionName,
-        sectionId: editSectionName,
-        courseId: course._id,
-      }, token)
+      if (editSectionName) {
+        result = await updateSection({
+          sectionName: data.sectionName,
+          sectionId: editSectionName,
+          courseId: course._id,
+        }, token)
+      }
+      else {
+        result = await createSection({
+          sectionName: data.sectionName,
+          courseId: course._id,
+        }, token)
+      }
+
+      if (result) {
+        dispatch(setCourse(result));
+        setEditSectionName(null);
+        setValue("sectionName", "")
+      }
+    } finally {
+      loadingRef.current = false
+      setLoading(false);
     }
-    else {
-      result = await createSection({
-        sectionName: data.sectionName,
-        courseId: course._id,
-      }, token)
-    }
-
-    // update values of course
-    if (result) {
-      dispatch(setCourse(result));
-      setEditSectionName(null);
-      setValue("sectionName", "")
-    }
-
-    // set loading false
-    setLoading(false);
-
   }
 
 
@@ -105,7 +109,11 @@ const CourseBuilderForm = () => {
           <IconBtn
             type="Submit"
             disabled={loading}
-            text={editSectionName ? "Edit Section Name" : "Create Section"}
+            text={
+              loading
+                ? (editSectionName ? "Saving..." : "Creating...")
+                : (editSectionName ? "Edit Section Name" : "Create Section")
+            }
             outline={true}
             customClasses={"text-white"}>
             <CiCirclePlus className='text-yellow-100 text-2xl font-bold' />

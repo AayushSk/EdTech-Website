@@ -8,10 +8,13 @@ const ForgotPassword = () => {
     const [emailSent,setEmailSent] = useState(false);
     const [email,setEmail] = useState("");
     const dispatch = useDispatch();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleOnSubmit=(e)=>{
+    const handleOnSubmit = async (e) => {
         e.preventDefault();
-        dispatch(getPasswordResetToken(email,setEmailSent));
+        setIsSubmitting(true);
+        await dispatch(getPasswordResetToken(email, setEmailSent));
+        setIsSubmitting(false);
     }
   return (
     <div className='w-11/12 max-w-maxContent text-white  flex flex-col justify-center items-center m-auto'>
@@ -29,7 +32,7 @@ const ForgotPassword = () => {
                         </h1>
                         <p className='w-[80%] pt-3 text-richblack-100 text-lg'>
                             {
-                                !emailSent ? "Have no fear. We’ll email you instructions to reset your password. If you dont have access to your email we can try account recovery"
+                                !emailSent ? "Have no fear. We'll email you instructions to reset your password. If you dont have access to your email we can try account recovery"
                                 :`We have sent the reset email to
                                 ${email}`
                             }
@@ -54,7 +57,8 @@ const ForgotPassword = () => {
                             }
                             <button
                             type='submit'
-                            className='mt-9 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'>
+                            disabled={isSubmitting}
+                            className='mt-9 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'>
                                 {
                                 !emailSent ? "Reset Password" : "Resend Email"
                                 }

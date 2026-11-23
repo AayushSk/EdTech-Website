@@ -14,6 +14,7 @@ export default function Upload({
   video = false,
   viewData = null,
   editData = null,
+  required = true,
 }) {
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewSource, setPreviewSource] = useState(
@@ -46,7 +47,7 @@ export default function Upload({
   }
 
   useEffect(() => {
-    register(name, { required: true })
+    register(name, { required })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [register])
 

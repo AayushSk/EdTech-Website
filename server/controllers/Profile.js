@@ -187,7 +187,7 @@ exports.getEnrolledCourses = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "User Data fetched successfully",
-            data: cachedPayload.enrolledCoursesData,
+            data: cachedPayload.enrolledCoursesData?.courses || cachedPayload.enrolledCoursesData,
             ...(cachedPayload.paginationMeta && { pagination: cachedPayload.paginationMeta }),
         });
     } catch (error) {

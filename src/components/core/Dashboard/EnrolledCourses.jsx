@@ -3,6 +3,7 @@ import ProgressBar from "@ramonak/react-progress-bar"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
+import Pagination from "../../common/Pagination"
 import { getUserEnrolledCourses } from "../../../services/profileAPI"
 
 export default function EnrolledCourses() {
@@ -10,25 +11,39 @@ export default function EnrolledCourses() {
   const navigate = useNavigate()
 
   const [enrolledCourses, setEnrolledCourses] = useState(null)
+  const [pagination, setPagination] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let isCurrentRequest = true
     const getEnrolledCourses = async () => {
+      setLoading(true)
       try {
-        const res = await getUserEnrolledCourses(token)
-        setEnrolledCourses(res)
+        const result = await getUserEnrolledCourses(token, currentPage, 10)
+        if (isCurrentRequest) {
+          setEnrolledCourses(result?.courses || [])
+          setPagination(result?.pagination || null)
+        }
       } catch (error) {
         console.log("Could not fetch enrolled courses.")
+        if (isCurrentRequest) setEnrolledCourses([])
+      } finally {
+        if (isCurrentRequest) setLoading(false)
       }
     }
     if (token) {
       getEnrolledCourses()
     }
-  }, [token])
+    return () => {
+      isCurrentRequest = false
+    }
+  }, [token, currentPage])
 
   return (
     <>
       <div className="text-3xl text-richblack-50">Enrolled Courses</div>
-      {!enrolledCourses ? (
+      {loading ? (
         <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
           <div className="spinner"></div>
         </div>
@@ -85,6 +100,11 @@ export default function EnrolledCourses() {
               </div>
             </div>
           ))}
+          <Pagination
+            currentPage={pagination?.currentPage || currentPage}
+            totalPages={pagination?.totalPages || 0}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </>

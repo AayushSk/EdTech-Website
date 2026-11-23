@@ -20,10 +20,15 @@ const LoginForm = () => {
         ))
     }
 
-    const handleonSubmit = (e) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleonSubmit = async (e) => {
         e.preventDefault();
-        dispatch(login(formData.email, formData.password, navigate))
-    }
+        setIsSubmitting(true);
+        await dispatch(login(formData.email, formData.password, navigate));
+        setIsSubmitting(false);
+    };
+
     return (
         <div className='w-full'>
             <form className='flex flex-col w-full gap-y-4 mt-6' onSubmit={handleonSubmit}>
@@ -74,7 +79,8 @@ const LoginForm = () => {
                 </div>
                 <button
                     type='submit'
-                    className='mt-9 w-[69%] bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'>
+                    disabled={isSubmitting}
+                    className='mt-9 w-[69%] bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'>
                     Sign in
                 </button>
 

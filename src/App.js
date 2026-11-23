@@ -14,6 +14,7 @@ import PrivateRoute from './components/core/Auth/PrivateRoute'
 import Error from './pages/Error'
 import Settings from './components/core/Dashboard/Settings'
 import EnrolledCourses from './components/core/Dashboard/EnrolledCourses'
+import MyCourses from './components/core/Dashboard/MyCourses'
 import Cart from './components/core/Dashboard/Cart'
 import { ACCOUNT_TYPE } from './utils/constants'
 import { useSelector } from 'react-redux'
@@ -60,6 +61,7 @@ function App() {
           {
             user?.accountType === ACCOUNT_TYPE.INSTRUCTOR && (
               <>
+                <Route path='/dashboard/my-courses' element={<MyCourses />} />
                 <Route path='/dashboard/add-course' element={<AddCourse />} />
               </>
             )

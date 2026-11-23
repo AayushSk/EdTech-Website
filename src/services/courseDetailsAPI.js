@@ -260,8 +260,8 @@ export const deleteSubSection = async (data, token) => {
 }
 
 // fetching all courses under a specific instructor
-export const fetchInstructorCourses = async (token) => {
-  let result = []
+export const fetchInstructorCourses = async (token, page = 1, limit = 10) => {
+  let result = { allCourses: [], pagination: null }
   const toastId = toast.loading("Loading...")
   try {
     const response = await apiConnector(
@@ -270,13 +270,17 @@ export const fetchInstructorCourses = async (token) => {
       null,
       {
         Authorization: `Bearer ${token}`,
-      }
+      },
+      { page, limit }
     )
     console.log("INSTRUCTOR COURSES API RESPONSE............", response)
     if (!response?.data?.success) {
       throw new Error("Could Not Fetch Instructor Courses")
     }
-    result = response?.data?.data
+    result = {
+      allCourses: response?.data?.data || [],
+      pagination: response?.data?.pagination || null,
+    }
   } catch (error) {
     console.log("INSTRUCTOR COURSES API ERROR............", error)
     toast.error(error.message)

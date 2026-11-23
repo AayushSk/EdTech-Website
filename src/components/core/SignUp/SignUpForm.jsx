@@ -19,6 +19,7 @@ const SignUpForm = ({ accountType }) => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     function changeHandler(event) {
         setFormData((prev) => (
             {
@@ -27,7 +28,7 @@ const SignUpForm = ({ accountType }) => {
             }
         ))
     }
-    const submitHandler = ((e) => {
+    const submitHandler = (async (e) => {
         e.preventDefault();
         // signUpData=formData;
         if (formData.password !== formData.confirmPassword) {
@@ -39,8 +40,10 @@ const SignUpForm = ({ accountType }) => {
             accountType,
         }
         dispatch(setSignupData(signUpData))
+        setIsSubmitting(true);
         if (signUpData !== null) navigate('/verify-email')
-        dispatch(sendOtp(formData.email, navigate))
+        await dispatch(sendOtp(formData.email, navigate))
+        setIsSubmitting(false);
     })
     return (
         <div className='w-full'>
@@ -137,7 +140,8 @@ const SignUpForm = ({ accountType }) => {
                 </div>
                 <button
                     type='submit'
-                    className='mt-9 w-[69%] bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'>
+                    disabled={isSubmitting}
+                    className='mt-9 w-[69%] bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'>
                     Create Account
                 </button>
 

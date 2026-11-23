@@ -6,22 +6,35 @@ import { ratingsEndpoints } from "../../../services/apis"
 
 const ReviewSection = () => {
   const [reviews, setReviews] = useState([])
+  const [pagination, setPagination] = useState(null)
 
   useEffect(() => {
+    let isCurrentRequest = true
     ;(async () => {
       try {
         const { data } = await apiConnector(
           "GET",
-          ratingsEndpoints.REVIEWS_DETAILS_API
+          ratingsEndpoints.REVIEWS_DETAILS_API,
+          null,
+          null,
+          { limit: 10 }
         )
 
-        if (data?.success) {
+        if (isCurrentRequest && data?.success) {
           setReviews(data?.data || [])
+          setPagination(data?.pagination || null)
         }
       } catch (error) {
-        setReviews([])
+        if (isCurrentRequest) {
+          setReviews([])
+          setPagination(null)
+        }
       }
     })()
+
+    return () => {
+      isCurrentRequest = false
+    }
   }, [])
 
   const validReviews = reviews.filter((review) => {
@@ -41,7 +54,7 @@ const ReviewSection = () => {
         <div className="text-4xl text-center text-white">
           Reviews from other learners
         </div>
-        <ReviewSlider reviews={validReviews} />
+        <ReviewSlider reviews={validReviews} pagination={pagination} />
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import { apiConnector } from '../services/apiconnector';
 import { catalogData, categories, courseEndpoints } from '../services/apis';
 import { useDebounce } from '../hooks/useDebounce';
 import { AiOutlineSearch, AiOutlineCloseCircle } from 'react-icons/ai';
+import Pagination from '../components/common/Pagination';
 
 const normalizeCategorySlug = (value = '') =>
   value.trim().toLowerCase().replace(/\s+/g, '-');
@@ -17,25 +18,21 @@ const Catalog = () => {
   const [catalogPageData, setCatalogPageData] = useState(null);
   const [allPublishedCourses, setAllPublishedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   // Search state with debouncing
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearchTerm = useDebounce(searchInput, 400);
 
-  // 1. Fetch all categories and all courses on mount
+  // 1. Fetch categories and resolve the selected category from the URL
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [catResponse, courseResponse] = await Promise.all([
-          apiConnector('GET', categories.CATEGORIES_API),
-          apiConnector('GET', courseEndpoints.GET_ALL_COURSE_API),
-        ]);
+        const catResponse = await apiConnector('GET', categories.CATEGORIES_API);
 
         const categoryList = catResponse?.data?.data || [];
         setAllCategories(categoryList);
-
-        const courseList = courseResponse?.data?.data || [];
-        setAllPublishedCourses(courseList);
 
         // If URL has /catalog/:catalogName, select that category
         if (catalogName) {
@@ -56,12 +53,50 @@ const Catalog = () => {
     fetchInitialData();
   }, [catalogName]);
 
-  // 2. When a specific category is chosen, fetch its catalog page details
+  // 2. Fetch one page of all courses when no category is selected
   useEffect(() => {
+    if (selectedCategory) return;
+
+    let isCurrentRequest = true;
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        const response = await apiConnector(
+          'GET',
+          courseEndpoints.GET_ALL_COURSE_API,
+          null,
+          null,
+          { page: catalogPage, limit: 10 }
+        );
+
+        if (isCurrentRequest) {
+          setAllPublishedCourses(response?.data?.data || []);
+          setPagination(response?.data?.pagination || null);
+        }
+      } catch (error) {
+        if (isCurrentRequest) {
+          console.error('Failed to fetch catalog courses:', error);
+          setAllPublishedCourses([]);
+          setPagination(null);
+        }
+      } finally {
+        if (isCurrentRequest) setLoading(false);
+      }
+    };
+
+    fetchCourses();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [catalogPage, selectedCategory]);
+
+  // 3. When a specific category is chosen, fetch its catalog page details
+  useEffect(() => {
+    let isCurrentRequest = true;
     const fetchCategoryPage = async () => {
       if (!selectedCategory?._id) {
         setCatalogPageData(null);
-        setLoading(false);
+        setPagination(null);
         return;
       }
 
@@ -70,16 +105,19 @@ const Catalog = () => {
         const response = await apiConnector('POST', catalogData.CATALOGPAGEDATA_API, {
           categoryId: selectedCategory._id,
         });
-        setCatalogPageData(response?.data || {});
+        if (isCurrentRequest) setCatalogPageData(response?.data || {});
       } catch (error) {
         console.log('Category page data note:', error?.response?.data?.message || error.message);
-        setCatalogPageData({});
+        if (isCurrentRequest) setCatalogPageData({});
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) setLoading(false);
       }
     };
 
     fetchCategoryPage();
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [selectedCategory]);
 
   // 3. Compute base courses depending on whether a category is selected or "All"
@@ -269,6 +307,14 @@ const Catalog = () => {
               <p>No courses available in this selection yet.</p>
             )}
           </div>
+        )}
+
+        {!loading && !selectedCategory && pagination?.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination?.currentPage || catalogPage}
+            totalPages={pagination.totalPages}
+            onPageChange={setCatalogPage}
+          />
         )}
 
         {/* Other Courses Recommendation section (when inside a specific category) */}

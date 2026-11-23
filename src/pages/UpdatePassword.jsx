@@ -24,6 +24,7 @@ const UpdatePassword = () => {
     });
     const [showPassword,setShowPassword]=useState(false);
     const [showConfirmPassword,setShowConfirmPassword]=useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     const changePassword=(e)=>{
         setFormData((prevData)=>({
@@ -32,11 +33,12 @@ const UpdatePassword = () => {
         }))
     }
 
-    const handleOnSubmit = (e)=>{
+    const handleOnSubmit = async (e)=>{
         e.preventDefault();
         const token=location.pathname.split('/').at(-1);
-        dispatch(resetPassword(formData.password,formData.confirmPassword,token));
-
+        setIsSubmitting(true);
+        await dispatch(resetPassword(formData.password,formData.confirmPassword,token));
+        setIsSubmitting(false);
     }
   return (
     <div className='text-white flex justify-center items-center m-auto  '>
@@ -101,7 +103,8 @@ const UpdatePassword = () => {
                         </div>
 
                         <button type="submit"
-                        className='mt-3 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'>
+                        disabled={isSubmitting}
+                        className='mt-3 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'>
                             Reset Password
                         </button>
                     </form>

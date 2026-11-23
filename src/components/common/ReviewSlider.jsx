@@ -1,35 +1,42 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import ReactStars from "react-rating-stars-component"
 import { FaStar } from "react-icons/fa"
 
 import { apiConnector } from "../../services/apiconnector"
 import { ratingsEndpoints } from "../../services/apis"
 
-function ReviewSlider({ reviews: reviewsProp = [] }) {
+function ReviewSlider({ reviews: reviewsProp = [], pagination: paginationProp = null }) {
   const [reviews, setReviews] = useState(reviewsProp)
+  const [pagination, setPagination] = useState(paginationProp)
+  const [loadingMore, setLoadingMore] = useState(false)
   const truncateWords = 15
 
-  useEffect(() => {
-    if (reviewsProp && reviewsProp.length > 0) {
-      setReviews(reviewsProp)
-      return
-    }
+  const loadMoreReviews = async () => {
+    if (!pagination?.hasNextPage || loadingMore) return
 
-    ;(async () => {
-      try {
-        const { data } = await apiConnector(
-          "GET",
-          ratingsEndpoints.REVIEWS_DETAILS_API
-        )
+    setLoadingMore(true)
+    try {
+      const { data } = await apiConnector(
+        "GET",
+        ratingsEndpoints.REVIEWS_DETAILS_API,
+        null,
+        null,
+        { limit: pagination.limit || 10, cursor: pagination.nextCursor }
+      )
 
-        if (data?.success) {
-          setReviews(data?.data || [])
-        }
-      } catch (error) {
-        setReviews([])
+      if (data?.success) {
+        setReviews((currentReviews) => [
+          ...currentReviews,
+          ...(Array.isArray(data?.data) ? data.data : []),
+        ])
+        setPagination(data?.pagination || null)
       }
-    })()
-  }, [reviewsProp])
+    } catch (error) {
+      console.error("Failed to fetch more reviews:", error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const validReviews = reviews.filter((review) => {
     const rating = Number(review?.rating)
@@ -99,6 +106,18 @@ function ReviewSlider({ reviews: reviewsProp = [] }) {
             )
           })}
         </div>
+        {pagination?.hasNextPage && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={loadMoreReviews}
+              disabled={loadingMore}
+              className="rounded-md border border-richblack-500 px-4 py-2 text-sm font-medium text-richblack-50 transition hover:border-yellow-50 disabled:cursor-wait disabled:opacity-60"
+            >
+              {loadingMore ? "Loading..." : "Load more reviews"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

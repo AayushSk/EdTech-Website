@@ -11,6 +11,9 @@ const VerifyEmail = () => {
     const dispatch = useDispatch();
     const [otp, setOtp] = useState('');
     const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+    const [isResending, setIsResending] = useState(false);
 
     useEffect(() => {
         if (!signUpData) {
@@ -18,7 +21,14 @@ const VerifyEmail = () => {
         }
     }, [navigate, signUpData])
 
-    const submitHandler = (e) => {
+    // Cooldown timer effect
+    useEffect(() => {
+        if (!cooldown) return;
+        const id = setInterval(() => setCooldown(c => c - 1), 1000);
+        return () => clearInterval(id);
+    }, [cooldown]);
+
+    const submitHandler = async (e) => {
         e.preventDefault();
         if (!signUpData) return;
         const {
@@ -30,7 +40,8 @@ const VerifyEmail = () => {
             confirmPassword,
         } = signUpData;
 
-        dispatch(signUp(
+        setIsSubmitting(true);
+        await dispatch(signUp(
             accountType,
             firstName,
             lastName,
@@ -39,8 +50,17 @@ const VerifyEmail = () => {
             confirmPassword,
             otp,
             navigate
-        ))
+        ));
+        setIsSubmitting(false);
     }
+
+    const handleResend = async () => {
+        if (cooldown || isResending) return;
+        setIsResending(true);
+        await dispatch(sendOtp(signUpData.email, navigate));
+        setIsResending(false);
+        setCooldown(60);
+    };
 
     return (
         <div className='text-yellow-50 flex justify-center items-center m-auto'>
@@ -73,6 +93,7 @@ const VerifyEmail = () => {
 
                         <button
                             type="submit"
+                            disabled={isSubmitting}
                             className='mt-9 w-full bg-yellow-50 text-black shadow-sm shadow-yellow-200 text-center text-[18px] px-6 py-2 rounded-md font-bold hover:scale-95 transition-all duration-200'
                         >
                             Verify Email
@@ -89,11 +110,12 @@ const VerifyEmail = () => {
 
                         {signUpData?.email && (
                             <button
-                                onClick={() => dispatch(sendOtp(signUpData.email, navigate))}
-                                className='flex gap-2 text-blue-100 hover:text-blue-50 justify-center items-center'
+                                onClick={handleResend}
+                                disabled={cooldown > 0 || isResending}
+                                className='flex gap-2 text-blue-100 hover:text-blue-50 justify-center items-center disabled:opacity-50 disabled:cursor-not-allowed'
                             >
                                 <FaClockRotateLeft />
-                                Resend it
+                                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend it'}
                             </button>
                         )}
                     </div>
