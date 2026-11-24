@@ -273,7 +273,7 @@ const Catalog = () => {
         </div>
 
         {/* Course Grid Results */}
-        {loading ? (
+        {loading && baseCourses.length === 0 ? (
           <div className="mt-16 grid min-h-[200px] place-items-center">
             <div className="spinner"></div>
           </div>
@@ -287,8 +287,10 @@ const Catalog = () => {
                   ? `Courses in ${selectedCategory.name}`
                   : 'All Courses'}
               </h2>
-              <span className="text-sm text-richblack-300">
-                {filteredCourses.length} {filteredCourses.length === 1 ? 'course' : 'courses'} found
+              <span className="text-sm text-richblack-300" aria-live="polite">
+                {loading
+                  ? 'Updating courses...'
+                  : `${filteredCourses.length} ${filteredCourses.length === 1 ? 'course' : 'courses'} found`}
               </span>
             </div>
 
@@ -314,6 +316,7 @@ const Catalog = () => {
             currentPage={pagination?.currentPage || catalogPage}
             totalPages={pagination.totalPages}
             onPageChange={setCatalogPage}
+            disabled={loading}
           />
         )}
 

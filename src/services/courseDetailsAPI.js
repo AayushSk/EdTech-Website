@@ -185,7 +185,7 @@ export const updateSection = async (data, token) => {
       throw new Error("Could Not Update Section")
     }
     toast.success("Course Section Updated")
-    result = response?.data?.data
+    result = response?.data?.updatedCourse || response?.data?.data || null
   } catch (error) {
     console.log("UPDATE SECTION API ERROR............", error)
     toast.error(error.message)
@@ -229,7 +229,7 @@ export const deleteSection = async (data, token) => {
       throw new Error("Could Not Delete Section")
     }
     toast.success("Course Section Deleted")
-    result = response?.data?.data
+    result = response?.data?.updatedCourse || response?.data?.data || null
   } catch (error) {
     console.log("DELETE SECTION API ERROR............", error)
     toast.error(error.message)
@@ -262,7 +262,6 @@ export const deleteSubSection = async (data, token) => {
 // fetching all courses under a specific instructor
 export const fetchInstructorCourses = async (token, page = 1, limit = 10) => {
   let result = { allCourses: [], pagination: null }
-  const toastId = toast.loading("Loading...")
   try {
     const response = await apiConnector(
       "GET",
@@ -285,13 +284,13 @@ export const fetchInstructorCourses = async (token, page = 1, limit = 10) => {
     console.log("INSTRUCTOR COURSES API ERROR............", error)
     toast.error(error.message)
   }
-  toast.dismiss(toastId)
   return result
 }
 
 // delete a course
 export const deleteCourse = async (data, token) => {
   const toastId = toast.loading("Loading...")
+  let deleted = false
   try {
     const response = await apiConnector("DELETE", DELETE_COURSE_API, data, {
       Authorization: `Bearer ${token}`,
@@ -301,11 +300,13 @@ export const deleteCourse = async (data, token) => {
       throw new Error("Could Not Delete Course")
     }
     toast.success("Course Deleted")
+    deleted = true
   } catch (error) {
     console.log("DELETE COURSE API ERROR............", error)
     toast.error(error.message)
   }
   toast.dismiss(toastId)
+  return deleted
 }
 
 // get full details of a course

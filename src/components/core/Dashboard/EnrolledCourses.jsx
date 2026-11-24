@@ -42,8 +42,15 @@ export default function EnrolledCourses() {
 
   return (
     <>
-      <div className="text-3xl text-richblack-50">Enrolled Courses</div>
-      {loading ? (
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-3xl text-richblack-50">Enrolled Courses</div>
+        {loading && enrolledCourses?.length > 0 && (
+          <span role="status" className="text-sm text-richblack-300">
+            Updating...
+          </span>
+        )}
+      </div>
+      {loading && !enrolledCourses?.length ? (
         <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
           <div className="spinner"></div>
         </div>
@@ -104,6 +111,7 @@ export default function EnrolledCourses() {
             currentPage={pagination?.currentPage || currentPage}
             totalPages={pagination?.totalPages || 0}
             onPageChange={setCurrentPage}
+            disabled={loading}
           />
         </div>
       )}

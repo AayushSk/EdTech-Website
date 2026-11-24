@@ -35,7 +35,6 @@ export function getUserDetails(token, navigate) {
 }
 
 export async function getUserEnrolledCourses(token, page = 1, limit = 10) {
-  const toastId = toast.loading("Loading...")
   let result = { courses: [], pagination: null }
   try {
     // console.log("BEFORE Calling BACKEND API FOR ENROLLED COURSES");
@@ -55,7 +54,6 @@ export async function getUserEnrolledCourses(token, page = 1, limit = 10) {
     // )
 
     if (!response.data.success) {
-      toast.dismiss(toastId)
       throw new Error(response.data.message)
     }
     const responseData = response?.data?.data
@@ -66,12 +64,10 @@ export async function getUserEnrolledCourses(token, page = 1, limit = 10) {
       pagination:
         response?.data?.pagination || responseData?.pagination || null,
     }
-    toast.dismiss(toastId)
   } catch (error) {
     console.log("GET_USER_ENROLLED_COURSES_API API ERROR............", error)
     toast.error("Could Not Get Enrolled Courses")
   }
-  toast.dismiss(toastId)
   return result
 }
 

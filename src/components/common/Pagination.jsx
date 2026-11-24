@@ -1,6 +1,6 @@
 import React from "react"
 
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+const Pagination = ({ currentPage, totalPages, onPageChange, disabled = false }) => {
   if (!totalPages || totalPages <= 1) {
     return null
   }
@@ -16,7 +16,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
       <button
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage <= 1}
+        disabled={disabled || currentPage <= 1}
         className="rounded border border-richblack-600 px-3 py-2 text-richblack-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Previous
@@ -29,6 +29,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
             key={page}
             type="button"
             onClick={() => onPageChange(page)}
+            disabled={disabled}
             aria-current={page === currentPage ? "page" : undefined}
             className={`min-w-10 rounded border px-3 py-2 ${
               page === currentPage
@@ -43,7 +44,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
       <button
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage >= totalPages}
+        disabled={disabled || currentPage >= totalPages}
         className="rounded border border-richblack-600 px-3 py-2 text-richblack-100 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Next

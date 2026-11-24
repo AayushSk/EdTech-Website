@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ReviewSection from './components/core/HomePage/ReviewSection';
 import { apiConnector } from './services/apiconnector';
+import { deleteSection, updateSection } from './services/courseDetailsAPI';
 
 jest.mock('./services/apiconnector', () => ({
   apiConnector: jest.fn(),
@@ -9,6 +10,19 @@ jest.mock('./services/apiconnector', () => ({
 jest.mock('./services/apis', () => ({
   ratingsEndpoints: {
     REVIEWS_DETAILS_API: '/reviews',
+  },
+  courseEndpoints: {
+    UPDATE_SECTION_API: '/section/update',
+    DELETE_SECTION_API: '/section/delete',
+  },
+}));
+
+jest.mock('react-hot-toast', () => ({
+  toast: {
+    loading: jest.fn(),
+    success: jest.fn(),
+    error: jest.fn(),
+    dismiss: jest.fn(),
   },
 }));
 
@@ -66,4 +80,19 @@ test('loads the next review page using the returned cursor', async () => {
   });
   expect(apiConnector.mock.calls[0][4]).toEqual({ limit: 10 });
   expect(apiConnector.mock.calls[1][4]).toEqual({ limit: 10, cursor: 'cursor-1' });
+});
+
+test.each([
+  ['updates', updateSection],
+  ['deletes', deleteSection],
+])('returns the updated course when a section %s', async (_action, sectionMutation) => {
+  const updatedCourse = { _id: 'course-1', courseContent: [] };
+  apiConnector.mockReset();
+  apiConnector.mockResolvedValue({
+    data: { success: true, updatedCourse },
+  });
+
+  await expect(sectionMutation({ courseId: 'course-1' }, 'token')).resolves.toEqual(
+    updatedCourse
+  );
 });
