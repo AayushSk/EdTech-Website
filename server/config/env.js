@@ -16,8 +16,10 @@ const demoUsers = (process.env.DEMO_USERS || "")
 
 module.exports = {
     PORT: process.env.PORT,
+    NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
+    JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
     FRONTEND_URL: process.env.FRONTEND_URL,
     CONTACT_EMAIL: process.env.CONTACT_EMAIL,
     GOOGLE_SHEETS_WEB_APP_URL: process.env.GOOGLE_SHEETS_WEB_APP_URL,

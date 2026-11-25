@@ -1,14 +1,12 @@
 import React, { useState } from "react"
 import { useForm } from "react-hook-form"
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai"
-import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
 import { changePassword } from "../../../../services/SettingsAPI"
 import IconBtn from "../../../common/IconBtn"
 
 export default function UpdatePassword() {
-  const { token } = useSelector((state) => state.auth)
   const navigate = useNavigate()
 
   const [showOldPassword, setShowOldPassword] = useState(false)
@@ -23,7 +21,7 @@ export default function UpdatePassword() {
   const submitPasswordForm = async (data) => {
     // console.log("password Data - ", data)
     try {
-      await changePassword(token, data)
+      await changePassword(data)
     } catch (error) {
       console.log("ERROR MESSAGE - ", error.message)
     }

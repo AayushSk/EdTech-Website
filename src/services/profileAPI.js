@@ -7,14 +7,12 @@ import { logout } from "./authAPI"
 
 const { GET_USER_DETAILS_API, GET_USER_ENROLLED_COURSES_API, GET_INSTRUCTOR_DATA_API } = profileEndpoints
 
-export function getUserDetails(token, navigate) {
+export function getUserDetails(navigate) {
   return async (dispatch) => {
     const toastId = toast.loading("Loading...")
     dispatch(setLoading(true))
     try {
-      const response = await apiConnector("GET", GET_USER_DETAILS_API, null, {
-        Authorization: `Bearer ${token}`,
-      })
+      const response = await apiConnector("GET", GET_USER_DETAILS_API)
       console.log("GET_USER_DETAILS API RESPONSE............", response)
 
       if (!response.data.success) {
@@ -34,17 +32,16 @@ export function getUserDetails(token, navigate) {
   }
 }
 
-export async function getUserEnrolledCourses(token, page = 1, limit = 10) {
+export async function getUserEnrolledCourses(page = 1, limit = 10) {
   let result = { courses: [], pagination: null }
   try {
     // console.log("BEFORE Calling BACKEND API FOR ENROLLED COURSES");
     // const header= 
-    console.log(token);
     const response = await apiConnector(
       "GET",
       GET_USER_ENROLLED_COURSES_API,
       null,
-      {Authorization: `Bearer ${token}`},
+      null,
       { page, limit },
     )
     console.log("AFTER Calling BACKEND API FOR ENROLLED COURSES");
@@ -71,14 +68,11 @@ export async function getUserEnrolledCourses(token, page = 1, limit = 10) {
   return result
 }
 
-export async function getInstructorData(token) {
+export async function getInstructorData() {
   const toastId = toast.loading("Loading...");
   let result = [];
   try{
-    const response = await apiConnector("GET", GET_INSTRUCTOR_DATA_API, null, 
-    {
-      Authorization: `Bearer ${token}`,
-    })
+    const response = await apiConnector("GET", GET_INSTRUCTOR_DATA_API)
 
     console.log("GET_INSTRUCTOR_API_RESPONSE", response);
     result = response?.data?.courses

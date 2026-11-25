@@ -17,7 +17,6 @@ const CourseBuilderForm = () => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
-  const { token } = useSelector((state) => state.auth)
 
   const cancelEdit = () => {
     setEditSectionName(null);
@@ -55,13 +54,13 @@ const CourseBuilderForm = () => {
           sectionName: data.sectionName,
           sectionId: editSectionName,
           courseId: course._id,
-        }, token)
+        })
       }
       else {
         result = await createSection({
           sectionName: data.sectionName,
           courseId: course._id,
-        }, token)
+        })
       }
 
       if (result) {

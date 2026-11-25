@@ -7,6 +7,16 @@ const { passwordUpdated } = require("../mail/templates/passwordUpdate");
 const Profile = require("../models/Profile");
 const env = require("../config/env");
 const { publishEvent } = require("../config/kafkaProducer");
+const RefreshSession = require("../models/RefreshSession");
+const {
+	createAccessToken,
+	createRefreshSession,
+	hashToken,
+	setAuthCookies,
+	clearAuthCookies,
+	revokeRefreshSession,
+	revokeUserRefreshSessions,
+} = require("../utils/authTokens");
 
 // Signup Controller for Registering USers
 
@@ -144,28 +154,20 @@ exports.login = async (req, res) => {
 			});
 		}
 
-		// Generate JWT token and Compare Password
+		// Generate short-lived access and rotating refresh credentials
 		if (await bcrypt.compare(password, user.password)) {
-			const token = jwt.sign(
-				{ email: user.email, id: user._id, accountType: user.accountType },
-				env.JWT_SECRET,
-				{
-					expiresIn: "24h",
-				}
-			);
+			const accessToken = createAccessToken(user);
+			const refreshToken = await createRefreshSession(user);
 
-			// Save token to user document in database
-			user.token = token;
-			user.password = undefined;
-			// Set cookie for token and return success response
-			const options = {
-				expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-				httpOnly: true,
-			};
-			res.cookie("token", token, options).status(200).json({
+			setAuthCookies(res, accessToken, refreshToken);
+
+			const userResponse = user.toObject();
+			delete userResponse.password;
+			delete userResponse.token;
+
+			return res.status(200).json({
 				success: true,
-				token,
-				user,
+				user: userResponse,
 				message: `User Login Success`,
 			});
 		} else {
@@ -183,6 +185,78 @@ exports.login = async (req, res) => {
 		});
 	}
 };
+
+// Rotate refresh credentials and issue a fresh access token
+exports.refreshSession = async (req, res) => {
+	try {
+		const refreshToken = req.cookies.refreshToken;
+		if (!refreshToken) {
+			clearAuthCookies(res);
+			return res.status(401).json({ success: false, message: "Refresh token missing" });
+		}
+
+		let decoded;
+		try {
+			decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
+		} catch (error) {
+			clearAuthCookies(res);
+			return res.status(401).json({ success: false, message: "Refresh token invalid" });
+		}
+
+		const session = await RefreshSession.findOne({
+			user: decoded.id,
+			tokenHash: hashToken(refreshToken),
+			revokedAt: null,
+			expiresAt: { $gt: new Date() },
+		});
+
+		if (!session) {
+			clearAuthCookies(res);
+			return res.status(401).json({ success: false, message: "Refresh session revoked" });
+		}
+
+		const user = await User.findById(decoded.id).populate("additionalDetails");
+		if (!user || !user.active) {
+			await revokeUserRefreshSessions(decoded.id);
+			clearAuthCookies(res);
+			return res.status(401).json({ success: false, message: "User unavailable" });
+		}
+
+		await RefreshSession.updateOne(
+			{ _id: session._id, revokedAt: null },
+			{ revokedAt: new Date() }
+		);
+
+		const accessToken = createAccessToken(user);
+		const newRefreshToken = await createRefreshSession(user);
+		setAuthCookies(res, accessToken, newRefreshToken);
+
+		const userResponse = user.toObject();
+		delete userResponse.password;
+		delete userResponse.token;
+
+		return res.status(200).json({
+			success: true,
+			user: userResponse,
+			message: "Session refreshed",
+		});
+	} catch (error) {
+		clearAuthCookies(res);
+		return res.status(500).json({ success: false, message: "Could not refresh session" });
+	}
+};
+
+exports.logout = async (req, res) => {
+	const refreshToken = req.cookies.refreshToken;
+
+	if (refreshToken) {
+		await revokeRefreshSession(refreshToken);
+	}
+
+	clearAuthCookies(res);
+	return res.status(200).json({ success: true, message: "Logged out successfully" });
+};
+
 // Controller for Changing Password
 exports.changePassword = async (req, res) => {
 	try {

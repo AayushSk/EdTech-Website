@@ -19,7 +19,7 @@ const defaultSubLinks = [
 ]
 
 const Navbar = () => {
-  const { token } = useSelector((state) => state.auth)
+  const { isAuthenticated } = useSelector((state) => state.auth)
   const { user } = useSelector((state) => state.profile)
   const { totalItems } = useSelector((state) => state.cart)
   const [subLinks, setSubLinks] = useState(defaultSubLinks)
@@ -104,21 +104,21 @@ const Navbar = () => {
               {totalItems > 0 && <span>{totalItems}</span>}
             </Link>
           )}
-          {token === null && (
+          {!isAuthenticated && (
             <Link to="/login">
               <div className='bg-richblack-800 text-richblack-100 py-2 px-3 rounded-lg border border-richblack-700 hover:bg-richblack-700 transition-all duration-200'>
                 Log in
               </div>
             </Link>
           )}
-          {token === null && (
+          {!isAuthenticated && (
             <Link to="/signup">
               <div className='bg-richblack-800 text-richblack-100 py-2 px-3 rounded-lg border border-richblack-700 hover:bg-richblack-700 transition-all duration-200'>
                 Sign up
               </div>
             </Link>
           )}
-          {token !== null && <ProfileDropDown />}
+          {isAuthenticated && <ProfileDropDown />}
         </div>
       </div>
     </div>

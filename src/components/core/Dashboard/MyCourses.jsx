@@ -7,7 +7,7 @@ import Pagination from "../../common/Pagination"
 import { deleteCourse, fetchInstructorCourses } from "../../../services/courseDetailsAPI"
 
 export default function MyCourses() {
-  const { token } = useSelector((state) => state.auth)
+  const { isAuthenticated } = useSelector((state) => state.auth)
   const [courses, setCourses] = useState([])
   const [pagination, setPagination] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -20,7 +20,7 @@ export default function MyCourses() {
 
     const loadCourses = async () => {
       setLoading(true)
-      const result = await fetchInstructorCourses(token, currentPage, 10)
+      const result = await fetchInstructorCourses(currentPage, 10)
 
       if (isCurrentRequest) {
         const totalPages = result?.pagination?.totalPages || 0
@@ -35,15 +35,15 @@ export default function MyCourses() {
       }
     }
 
-    if (token) loadCourses()
+    if (isAuthenticated) loadCourses()
 
     return () => {
       isCurrentRequest = false
     }
-  }, [token, currentPage, refreshKey])
+  }, [isAuthenticated, currentPage, refreshKey])
 
   const handleDeleteCourse = async (courseId) => {
-    const deleted = await deleteCourse({ courseId }, token)
+    const deleted = await deleteCourse({ courseId })
     setConfirmationModal(null)
     if (deleted) setRefreshKey((key) => key + 1)
   }

@@ -12,7 +12,6 @@ import { setCourse } from '../../../../../slices/courseSlice'
 
 const NestedView = ({ handleChangeEditSectionName }) => {
   const { course } = useSelector((state) => state.course)
-  const { token } = useSelector((state) => state.auth)
   const dispatch = useDispatch()
   const [addSubsection, setAddSubsection] = useState(null)
   const [viewSubsection, setViewSubsection] = useState(null)
@@ -20,13 +19,10 @@ const NestedView = ({ handleChangeEditSectionName }) => {
   const [confirmationModal, setConfirmationModal] = useState(null)
 
   const handleDeleteSection = async (sectionId) => {
-    const result = await deleteSection(
-      {
-        sectionId,
-        courseId: course._id,
-      },
-      token
-    )
+    const result = await deleteSection({
+      sectionId,
+      courseId: course._id,
+    })
     if (result) {
       dispatch(setCourse(result))
     }
@@ -34,14 +30,11 @@ const NestedView = ({ handleChangeEditSectionName }) => {
   }
 
   const handleDeleteSubSection = async (subSectionId, sectionId) => {
-    const result = await deleteSubSection(
-      {
-        subSectionId,
-        sectionId,
-        courseId: course._id,
-      },
-      token
-    )
+    const result = await deleteSubSection({
+      subSectionId,
+      sectionId,
+      courseId: course._id,
+    })
     if (result) {
       dispatch(setCourse(result))
     }

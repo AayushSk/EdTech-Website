@@ -1,12 +1,40 @@
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { ENV } from "../config/env";
 
-export const axiosInstance = axios.create({});
+export const axiosInstance = axios.create({
+    withCredentials: true,
+});
 
 // Response Interceptor for Rate Limiting & Global HTTP 429 Awareness
+let refreshPromise = null;
+
 axiosInstance.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error?.config;
+
+        if (
+            error?.response?.status === 401 &&
+            originalRequest &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes("/auth/login") &&
+            !originalRequest.url?.includes("/auth/refresh")
+        ) {
+            originalRequest._retry = true;
+
+            try {
+                refreshPromise = refreshPromise || axiosInstance.post(`${ENV.BASE_URL}/auth/refresh`);
+                await refreshPromise;
+                refreshPromise = null;
+                return axiosInstance(originalRequest);
+            } catch (refreshError) {
+                refreshPromise = null;
+                window.dispatchEvent(new CustomEvent("auth:session-expired"));
+                return Promise.reject(refreshError);
+            }
+        }
+
         if (error?.response?.status === 429) {
             const message =
                 error?.response?.data?.message ||

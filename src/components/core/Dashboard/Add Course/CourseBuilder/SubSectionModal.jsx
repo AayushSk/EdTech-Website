@@ -9,7 +9,6 @@ import { setCourse } from '../../../../../slices/courseSlice'
 
 const SubSectionModal = ({ modalData, setModalData, add = false, view = false, edit = false }) => {
   const dispatch = useDispatch()
-  const { token } = useSelector((state) => state.auth)
   const { course } = useSelector((state) => state.course)
   const [loading, setLoading] = useState(false)
   const loadingRef = useRef(false)
@@ -50,10 +49,10 @@ const SubSectionModal = ({ modalData, setModalData, add = false, view = false, e
       }
 
       if (add) {
-        result = await createSubSection(formData, token)
+        result = await createSubSection(formData)
       } else if (edit) {
         formData.append("SubsectionId", modalData._id)
-        result = await updateSubSection(formData, token)
+        result = await updateSubSection(formData)
       }
 
       if (result) {

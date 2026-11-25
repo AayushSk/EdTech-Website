@@ -13,7 +13,6 @@ export default function PublishCourse() {
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { token } = useSelector((state) => state.auth)
   const { course } = useSelector((state) => state.course)
   const [loading, setLoading] = useState(false)
 
@@ -51,7 +50,7 @@ export default function PublishCourse() {
       : COURSE_STATUS.DRAFT
     formData.append("status", courseStatus)
     setLoading(true)
-    const result = await editCourseDetails(formData, token)
+    const result = await editCourseDetails(formData)
     if (result) {
       goToCourses()
     }

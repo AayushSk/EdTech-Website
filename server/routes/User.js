@@ -7,6 +7,8 @@ const {
   login,
   signup,
   changePassword,
+  refreshSession,
+  logout,
 } = require("../controllers/Auth")
 const { sendotp } = require("../controllers/OTP")
 
@@ -26,6 +28,8 @@ const { otpLimiter, authLimiter } = require("../middlewares/rateLimiter")
 
 // Route for user login
 router.post("/login", authLimiter, login)
+router.post("/refresh", authLimiter, refreshSession)
+router.post("/logout", logout)
 
 // Route for user signup
 router.post("/signup", authLimiter, signup)

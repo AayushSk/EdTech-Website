@@ -16,11 +16,12 @@ exports.resetPasswordToken = async (req, res) => {
 			});
 		}
 		const token = crypto.randomBytes(20).toString("hex");
+		const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
 		const updatedDetails = await User.findOneAndUpdate(
 			{ email: email },
 			{
-				token: token,
+				resetPasswordTokenHash: tokenHash,
 				resetPasswordExpires: Date.now() + 3600000,
 			},
 			{ new: true }
@@ -36,7 +37,7 @@ exports.resetPasswordToken = async (req, res) => {
 			recipient: email,
 			subject: "Password Reset",
 			html: emailBody,
-			metadata: { token, resetUrl: url },
+			metadata: { userId: updatedDetails._id },
 		});
 
 		// 2. Fallback to direct sending if Kafka unavailable
@@ -69,7 +70,8 @@ exports.resetPassword = async (req, res) => {
 				message: "Password and Confirm Password Does not Match",
 			});
 		}
-		const userDetails = await User.findOne({ token: token });
+		const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+		const userDetails = await User.findOne({ resetPasswordTokenHash: tokenHash });
 		if (!userDetails) {
 			return res.json({
 				success: false,
@@ -83,9 +85,12 @@ exports.resetPassword = async (req, res) => {
 			});
 		}
 		const encryptedPassword = await bcrypt.hash(password, 10);
-		await User.findOneAndUpdate(
-			{ token: token },
-			{ password: encryptedPassword },
+		await User.findByIdAndUpdate(
+			userDetails._id,
+			{
+				$set: { password: encryptedPassword },
+				$unset: { resetPasswordTokenHash: 1, resetPasswordExpires: 1 },
+			},
 			{ new: true }
 		);
 		res.json({

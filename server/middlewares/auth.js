@@ -8,15 +8,7 @@ const User = require("../models/User");
 // This function is used as middleware to authenticate user requests
 exports.auth = async (req, res, next) => {
 	try {
-		// Extracting JWT from request cookies, body or header
-        console.log("Extracting JWT from request cookies");
-		const token =
-			req.header("Authorization").replace("Bearer ","") 
-            || req.cookies.token 
-            || req.body.token;
-
-            console.log("extracted JWT from request cookies");
-            console.log(token);
+		const token = req.cookies.accessToken;
 
 
 		// If JWT is missing, return 401 Unauthorized response

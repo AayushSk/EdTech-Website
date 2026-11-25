@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Home from "./pages/Home"
 import Signup from "./pages/Signup"
@@ -17,14 +17,53 @@ import EnrolledCourses from './components/core/Dashboard/EnrolledCourses'
 import MyCourses from './components/core/Dashboard/MyCourses'
 import Cart from './components/core/Dashboard/Cart'
 import { ACCOUNT_TYPE } from './utils/constants'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import AddCourse from './components/core/Dashboard/Add Course'
 import Contact from './pages/Contact'
 import Catalog from './pages/Catalog'
 import { Analytics } from '@vercel/analytics/react'
+import { apiConnector } from './services/apiconnector'
+import { endpoints } from './services/apis'
+import { setAuthenticated, setSessionChecked } from './slices/authSlice'
+import { setUser } from './slices/profileSlice'
 
 function App() {
+  const dispatch = useDispatch()
   const { user } = useSelector((state) => state.profile)
+
+  useEffect(() => {
+    let active = true
+
+    const restoreSession = async () => {
+      try {
+        const response = await apiConnector("POST", endpoints.REFRESH_SESSION_API)
+        if (active && response?.data?.success) {
+          dispatch(setUser(response.data.user))
+          dispatch(setAuthenticated(true))
+        }
+      } catch (error) {
+        if (active) {
+          dispatch(setUser(null))
+          dispatch(setAuthenticated(false))
+        }
+      } finally {
+        if (active) dispatch(setSessionChecked(true))
+      }
+    }
+
+    restoreSession()
+
+    const handleSessionExpired = () => {
+      dispatch(setUser(null))
+      dispatch(setAuthenticated(false))
+    }
+    window.addEventListener("auth:session-expired", handleSessionExpired)
+
+    return () => {
+      active = false
+      window.removeEventListener("auth:session-expired", handleSessionExpired)
+    }
+  }, [dispatch])
   return (
     <div className="w-screen min-h-screen bg-richblack-900 flex flex-col font-inter">
       <Navbar />

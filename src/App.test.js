@@ -82,6 +82,15 @@ test('loads the next review page using the returned cursor', async () => {
   expect(apiConnector.mock.calls[1][4]).toEqual({ limit: 10, cursor: 'cursor-1' });
 });
 
+test('authentication state has no bearer or localStorage JWT dependency', () => {
+  const authSource = require('./slices/authSlice').default;
+  const authInitialState = authSource(undefined, { type: '@@INIT' });
+
+  expect(authInitialState).not.toHaveProperty('token');
+  expect(authInitialState.isAuthenticated).toBe(false);
+  expect(authInitialState.isSessionChecked).toBe(false);
+});
+
 test.each([
   ['updates', updateSection],
   ['deletes', deleteSection],

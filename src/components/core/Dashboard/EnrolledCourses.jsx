@@ -7,7 +7,7 @@ import Pagination from "../../common/Pagination"
 import { getUserEnrolledCourses } from "../../../services/profileAPI"
 
 export default function EnrolledCourses() {
-  const { token } = useSelector((state) => state.auth)
+  const { isAuthenticated } = useSelector((state) => state.auth)
   const navigate = useNavigate()
 
   const [enrolledCourses, setEnrolledCourses] = useState(null)
@@ -20,7 +20,7 @@ export default function EnrolledCourses() {
     const getEnrolledCourses = async () => {
       setLoading(true)
       try {
-        const result = await getUserEnrolledCourses(token, currentPage, 10)
+        const result = await getUserEnrolledCourses(currentPage, 10)
         if (isCurrentRequest) {
           setEnrolledCourses(result?.courses || [])
           setPagination(result?.pagination || null)
@@ -32,13 +32,13 @@ export default function EnrolledCourses() {
         if (isCurrentRequest) setLoading(false)
       }
     }
-    if (token) {
+    if (isAuthenticated) {
       getEnrolledCourses()
     }
     return () => {
       isCurrentRequest = false
     }
-  }, [token, currentPage])
+  }, [isAuthenticated, currentPage])
 
   return (
     <>

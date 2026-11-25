@@ -9,7 +9,6 @@ export default function RenderTotalAmount() {
   const [loading, setLoading] = useState(false)
   const loadingRef = useRef(false)
   const { total, cart } = useSelector((state) => state.cart)
-  const { token } = useSelector((state) => state.auth)
   const { user } = useSelector((state) => state.profile)
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -21,7 +20,7 @@ export default function RenderTotalAmount() {
     loadingRef.current = true
     setLoading(true)
     try {
-      await buyCourse(token, courses, user, navigate, dispatch)
+      await buyCourse(courses, user, navigate, dispatch)
     } finally {
       loadingRef.current = false
       setLoading(false)

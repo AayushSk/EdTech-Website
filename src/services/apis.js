@@ -4,6 +4,8 @@ const BASE_URL = ENV.BASE_URL;
 
 // AUTH ENDPOINTS
 export const endpoints = {
+  REFRESH_SESSION_API: BASE_URL + "/auth/refresh",
+  LOGOUT_API: BASE_URL + "/auth/logout",
   SENDOTP_API: BASE_URL + "/auth/sendotp",
   SIGNUP_API: BASE_URL + "/auth/signup",
   LOGIN_API: BASE_URL + "/auth/login",

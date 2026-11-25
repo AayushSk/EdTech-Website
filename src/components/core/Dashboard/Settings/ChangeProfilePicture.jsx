@@ -6,7 +6,6 @@ import { updateDisplayPicture } from "../../../../services/SettingsAPI"
 import IconBtn from "../../../common/IconBtn"
 
 export default function ChangeProfilePicture() {
-  const { token } = useSelector((state) => state.auth)
   const { user } = useSelector((state) => state.profile)
   const dispatch = useDispatch()
 
@@ -44,7 +43,7 @@ export default function ChangeProfilePicture() {
       const formData = new FormData()
       formData.append("displayPicture", imageFile)
       // console.log("formdata", formData)
-      dispatch(updateDisplayPicture(token, formData)).then(() => {
+      dispatch(updateDisplayPicture(formData)).then(() => {
         setLoading(false)
       })
     } catch (error) {
