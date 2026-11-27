@@ -45,12 +45,13 @@ axiosInstance.interceptors.response.use(
     }
 );
 
-export const apiConnector = (method, url, bodyData, header, params) => {
+export const apiConnector = (method, url, bodyData, header, params, signal) => {
     return axiosInstance({
         method: `${method}`,
         url: `${url}`,
         data: bodyData ? bodyData : null,
         headers: header ? header : null,
         params: params ? params : null,
+        ...(signal ? { signal } : {}),
     });
 };

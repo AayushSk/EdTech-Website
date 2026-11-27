@@ -38,7 +38,7 @@ exports.signup = async (req, res) => {
 			!lastName ||
 			!email ||
 			!password ||
-			!otp||
+			!otp ||
 			!accountType
 		) {
 			return res.status(403).send({
@@ -49,6 +49,13 @@ exports.signup = async (req, res) => {
 				// 	confirmPassword,
 				// 	accountType,
 				// 	otp]
+			});
+		}
+		// Restrict public signup to Student and Instructor accounts only
+		if (!["Student", "Instructor"].includes(accountType)) {
+			return res.status(403).json({
+				success: false,
+				message: "Invalid account type. SignUp either as Student or Instructor.",
 			});
 		}
 		// Check if password and confirm password match
@@ -271,13 +278,13 @@ exports.changePassword = async (req, res) => {
 			oldPassword,
 			userDetails.password
 		);
-		if(oldPassword === newPassword){
+		if (oldPassword === newPassword) {
 			return res.status(400).json({
 				success: false,
 				message: "New Password cannot be same as Old Password",
 			});
 		}
-		
+
 		if (!isPasswordMatch) {
 			// If old password does not match, return a 401 (Unauthorized) error
 			return res

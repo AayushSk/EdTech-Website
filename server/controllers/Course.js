@@ -570,39 +570,47 @@ exports.deleteCourse = async (req, res) => {
 
 	  // Sanitize and escape regex characters to prevent ReDoS or regex injection
 	  const safeQuery = sanitizeRegex(searchQuery, 100);
+	  const cacheKey = CACHE_KEYS.SEARCH_COURSES(safeQuery.toLowerCase(), page, limit);
 
-	  const filter = safeQuery
-		? {
-			$or: [
-			  { courseName: { $regex: safeQuery, $options: "i" } },
-			  { courseDescription: { $regex: safeQuery, $options: "i" } },
-			  { tag: { $regex: safeQuery, $options: "i" } },
-			],
-		  }
-		: {};
+	  const result = await getOrSetCache(cacheKey, 120, async () => {
+		const filter = safeQuery
+		  ? {
+			  $or: [
+				{ courseName: { $regex: safeQuery, $options: "i" } },
+				{ courseDescription: { $regex: safeQuery, $options: "i" } },
+				{ tag: { $regex: safeQuery, $options: "i" } },
+			  ],
+			}
+		  : {};
 
-	  const totalCourses = await Course.countDocuments(filter);
-	  const totalPages = Math.ceil(totalCourses / limit);
+		const totalCourses = await Course.countDocuments(filter);
+		const totalPages = Math.ceil(totalCourses / limit);
 
-	  const courses = await Course.find(filter)
-		.populate({ path: "instructor" })
-		.populate("category")
-		.populate("ratingAndReviews")
-		.skip(skip)
-		.limit(limit)
-		.exec();
+		const courses = await Course.find(filter)
+		  .populate({ path: "instructor" })
+		  .populate("category")
+		  .populate("ratingAndReviews")
+		  .skip(skip)
+		  .limit(limit)
+		  .exec();
 
-	  return res.status(200).json({
-		success: true,
-		data: courses,
-		pagination: {
+		return {
+		  courses,
+		  pagination: {
 			currentPage: page,
 			totalPages: totalPages,
 			totalCourses: totalCourses,
 			limit: limit,
 			hasNextPage: page < totalPages,
 			hasPrevPage: page > 1,
-		},
+		  },
+		};
+	  });
+
+	  return res.status(200).json({
+		success: true,
+		data: result.courses,
+		pagination: result.pagination,
 	  });
 	} catch (error) {
 	  return res.status(500).json({

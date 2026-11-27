@@ -34,6 +34,7 @@ const CACHE_KEYS = {
     ALL_COURSES: (page, limit) => `courses:page:${page}:limit:${limit}`,
     COURSE_DETAILS: (courseId) => `course:${courseId}:details`,
     INSTRUCTOR_COURSES: (instructorId, page, limit) => `instructor:${instructorId}:courses:p${page}:l${limit}`,
+    SEARCH_COURSES: (query, page, limit) => `courses:search:${query || "all"}:p${page}:l${limit}`,
 
     // Reviews & Ratings
     ALL_REVIEWS: (cursor, limit) => `reviews:cursor:${cursor || "initial"}:limit:${limit}`,

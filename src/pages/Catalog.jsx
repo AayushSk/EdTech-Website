@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiConnector } from '../services/apiconnector';
 import { catalogData, categories, courseEndpoints } from '../services/apis';
 import { useDebounce } from '../hooks/useDebounce';
 import { AiOutlineSearch, AiOutlineCloseCircle } from 'react-icons/ai';
 import Pagination from '../components/common/Pagination';
+
+const isAbortError = (error) =>
+  error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError';
 
 const normalizeCategorySlug = (value = '') =>
   value.trim().toLowerCase().replace(/\s+/g, '-');
@@ -21,15 +24,25 @@ const Catalog = () => {
   const [catalogPage, setCatalogPage] = useState(1);
   const [pagination, setPagination] = useState(null);
 
-  // Search state with debouncing
+  // Search state with debouncing and in-memory query cache
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearchTerm = useDebounce(searchInput, 400);
+  const searchCacheRef = useRef(new Map());
 
   // 1. Fetch categories and resolve the selected category from the URL
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchInitialData = async () => {
       try {
-        const catResponse = await apiConnector('GET', categories.CATEGORIES_API);
+        const catResponse = await apiConnector(
+          'GET',
+          categories.CATEGORIES_API,
+          null,
+          null,
+          null,
+          controller.signal
+        );
 
         const categoryList = catResponse?.data?.data || [];
         setAllCategories(categoryList);
@@ -46,81 +59,120 @@ const Catalog = () => {
           setSelectedCategory(null);
         }
       } catch (error) {
-        console.error('Failed to fetch catalog initial data:', error);
+        if (!isAbortError(error)) {
+          console.error('Failed to fetch catalog initial data:', error);
+        }
       }
     };
 
     fetchInitialData();
+    return () => controller.abort();
   }, [catalogName]);
 
-  // 2. Fetch one page of all courses when no category is selected
+  // 2. Fetch one page of all courses (or backend search results) when no category is selected
   useEffect(() => {
     if (selectedCategory) return;
 
-    let isCurrentRequest = true;
+    const controller = new AbortController();
+    const trimmedSearch = debouncedSearchTerm.trim();
+
     const fetchCourses = async () => {
+      if (trimmedSearch) {
+        const cacheKey = `${trimmedSearch.toLowerCase()}:p${catalogPage}`;
+        const cached = searchCacheRef.current.get(cacheKey);
+        if (cached) {
+          setAllPublishedCourses(cached.courses);
+          setPagination(cached.pagination);
+          setLoading(false);
+          return;
+        }
+      }
+
       setLoading(true);
       try {
-        const response = await apiConnector(
-          'GET',
-          courseEndpoints.GET_ALL_COURSE_API,
-          null,
-          null,
-          { page: catalogPage, limit: 10 }
-        );
+        const response = trimmedSearch
+          ? await apiConnector(
+              'POST',
+              courseEndpoints.SEARCH_COURSES_API,
+              { searchQuery: trimmedSearch, page: catalogPage, limit: 10 },
+              null,
+              null,
+              controller.signal
+            )
+          : await apiConnector(
+              'GET',
+              courseEndpoints.GET_ALL_COURSE_API,
+              null,
+              null,
+              { page: catalogPage, limit: 10 },
+              controller.signal
+            );
 
-        if (isCurrentRequest) {
-          setAllPublishedCourses(response?.data?.data || []);
-          setPagination(response?.data?.pagination || null);
+        const courses = response?.data?.data || [];
+        const pageInfo = response?.data?.pagination || null;
+
+        if (trimmedSearch) {
+          const cacheKey = `${trimmedSearch.toLowerCase()}:p${catalogPage}`;
+          if (searchCacheRef.current.size >= 50) {
+            const oldestKey = searchCacheRef.current.keys().next().value;
+            searchCacheRef.current.delete(oldestKey);
+          }
+          searchCacheRef.current.set(cacheKey, { courses, pagination: pageInfo });
         }
+
+        setAllPublishedCourses(courses);
+        setPagination(pageInfo);
       } catch (error) {
-        if (isCurrentRequest) {
+        if (!isAbortError(error)) {
           console.error('Failed to fetch catalog courses:', error);
           setAllPublishedCourses([]);
           setPagination(null);
         }
       } finally {
-        if (isCurrentRequest) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchCourses();
-    return () => {
-      isCurrentRequest = false;
-    };
-  }, [catalogPage, selectedCategory]);
+    return () => controller.abort();
+  }, [catalogPage, selectedCategory, debouncedSearchTerm]);
 
   // 3. When a specific category is chosen, fetch its catalog page details
   useEffect(() => {
-    let isCurrentRequest = true;
+    const controller = new AbortController();
+
     const fetchCategoryPage = async () => {
       if (!selectedCategory?._id) {
         setCatalogPageData(null);
-        setPagination(null);
         return;
       }
 
       setLoading(true);
       try {
-        const response = await apiConnector('POST', catalogData.CATALOGPAGEDATA_API, {
-          categoryId: selectedCategory._id,
-        });
-        if (isCurrentRequest) setCatalogPageData(response?.data || {});
+        const response = await apiConnector(
+          'POST',
+          catalogData.CATALOGPAGEDATA_API,
+          { categoryId: selectedCategory._id },
+          null,
+          null,
+          controller.signal
+        );
+        setCatalogPageData(response?.data || {});
       } catch (error) {
-        console.log('Category page data note:', error?.response?.data?.message || error.message);
-        if (isCurrentRequest) setCatalogPageData({});
+        if (!isAbortError(error)) {
+          console.log('Category page data note:', error?.response?.data?.message || error.message);
+          setCatalogPageData({});
+        }
       } finally {
-        if (isCurrentRequest) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchCategoryPage();
-    return () => {
-      isCurrentRequest = false;
-    };
+    return () => controller.abort();
   }, [selectedCategory]);
 
-  // 3. Compute base courses depending on whether a category is selected or "All"
+  // 4. Compute base courses depending on whether a category is selected or "All"
   const baseCourses = useMemo(() => {
     if (!selectedCategory) {
       return allPublishedCourses;
@@ -128,9 +180,9 @@ const Catalog = () => {
     return catalogPageData?.selectedCourses || [];
   }, [selectedCategory, allPublishedCourses, catalogPageData]);
 
-  // 4. Apply debounced search filter on top of the selected category or all courses
+  // 5. Filter locally when inside a specific category; "All Courses" uses backend search
   const filteredCourses = useMemo(() => {
-    if (!debouncedSearchTerm.trim()) {
+    if (!selectedCategory || !debouncedSearchTerm.trim()) {
       return baseCourses;
     }
 
@@ -144,7 +196,7 @@ const Catalog = () => {
 
       return nameMatch || descMatch || tagMatch;
     });
-  }, [baseCourses, debouncedSearchTerm]);
+  }, [baseCourses, debouncedSearchTerm, selectedCategory]);
 
   const otherCourses = useMemo(() => {
     if (!selectedCategory || !catalogPageData) return [];
@@ -218,7 +270,10 @@ const Catalog = () => {
             <input
               type="text"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                setCatalogPage(1);
+              }}
               placeholder="Search courses by title, keywords, tags..."
               className="w-full rounded-full bg-richblack-900 border border-richblack-700 py-3 pl-11 pr-10 text-sm text-richblack-5 placeholder-richblack-400 focus:border-yellow-50 focus:outline-none transition shadow-inner"
             />
@@ -226,7 +281,10 @@ const Catalog = () => {
             {searchInput && (
               <button
                 type="button"
-                onClick={() => setSearchInput('')}
+                onClick={() => {
+                  setSearchInput('');
+                  setCatalogPage(1);
+                }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-richblack-400 hover:text-richblack-100 transition"
                 title="Clear search"
               >
@@ -241,7 +299,10 @@ const Catalog = () => {
           {/* "All Categories" pill */}
           <Link
             to="/catalog"
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => {
+              setSelectedCategory(null);
+              setCatalogPage(1);
+            }}
             className={`rounded-full border px-5 py-2 text-sm font-medium transition ${
               selectedCategory === null
                 ? 'border-yellow-50 bg-yellow-50 text-richblack-900'
@@ -259,7 +320,10 @@ const Catalog = () => {
               <Link
                 key={category._id}
                 to={`/catalog/${slug}`}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => {
+                  setSelectedCategory(category);
+                  setCatalogPage(1);
+                }}
                 className={`rounded-full border px-5 py-2 text-sm font-medium transition ${
                   isActive
                     ? 'border-yellow-50 bg-yellow-50 text-richblack-900'
