@@ -72,8 +72,10 @@ async function getOrSetCache(key, ttlSeconds, fetchFunction) {
 
         const freshData = await fetchFunction();
         if (freshData !== null && freshData !== undefined) {
-            // Write to Redis with expiration
-            await redis.set(key, freshData, { ex: ttlSeconds });
+            // Apply ±15% jitter to TTL to prevent cache avalanche
+            // (all keys expiring at the same time causing simultaneous DB hits)
+            const jitter = Math.floor(Math.random() * Math.ceil(ttlSeconds * 0.15));
+            await redis.set(key, freshData, { ex: ttlSeconds + jitter });
         }
         return freshData;
     } catch (err) {
