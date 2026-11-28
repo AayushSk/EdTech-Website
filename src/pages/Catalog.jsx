@@ -5,12 +5,10 @@ import { catalogData, categories, courseEndpoints } from '../services/apis';
 import { useDebounce } from '../hooks/useDebounce';
 import { AiOutlineSearch, AiOutlineCloseCircle } from 'react-icons/ai';
 import Pagination from '../components/common/Pagination';
+import { normalizeCategorySlug } from '../utils/categorySlug';
 
 const isAbortError = (error) =>
   error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError';
-
-const normalizeCategorySlug = (value = '') =>
-  value.trim().toLowerCase().replace(/\s+/g, '-');
 
 const formatCategoryName = (value = '') => value.trim();
 
@@ -49,9 +47,10 @@ const Catalog = () => {
 
         // If URL has /catalog/:catalogName, select that category
         if (catalogName) {
-          const requestedName = catalogName.replace(/-/g, ' ');
           const matched = categoryList.find(
-            (c) => c.name.toLowerCase() === requestedName.toLowerCase()
+            (category) =>
+              normalizeCategorySlug(category.name) ===
+              normalizeCategorySlug(catalogName)
           );
           setSelectedCategory(matched || null);
         } else {

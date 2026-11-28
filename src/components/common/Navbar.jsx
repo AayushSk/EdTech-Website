@@ -9,6 +9,7 @@ import ProfileDropDown from '../core/Auth/ProfileDropDown'
 import { apiConnector } from '../../services/apiconnector'
 import { categories } from '../../services/apis'
 import { AiOutlineDown } from "react-icons/ai"
+import { normalizeCategorySlug } from '../../utils/categorySlug'
 
 const defaultSubLinks = [
   { name: 'AI/ML' },
@@ -67,7 +68,7 @@ const Navbar = () => {
                         {subLinks.length > 0 ? (
                           subLinks.map((subLink, subIndex) => (
                             <Link
-                              to={`/catalog/${subLink.name}`}
+                              to={`/catalog/${normalizeCategorySlug(subLink.name)}`}
                               key={subIndex}
                               className="rounded-md bg-transparent py-4 pl-5 hover:bg-richblack-50 transition-all duration-200"
                             >
